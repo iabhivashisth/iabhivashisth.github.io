@@ -1223,7 +1223,9 @@ let actionT = 0;
 let sweepT = 0;
 /* the wrap slate claps when someone reaches out */
 let wrapClapT = 0;
-/* department gel — service cards tint the banner light */
+/* department gel — service cards tint the banner light; the tint wheel
+   moves the resting colour itself */
+const gelDefault = new THREE.Color(COL.amber);
 const gelTarget = new THREE.Color(COL.amber);
 
 /* hooks for the DOM layer */
@@ -1236,7 +1238,8 @@ window.__lot = {
   action() { actionT = 5.2; },
   sweep() { if (actionT <= 0) sweepT = 2.8; },
   wrapClap() { wrapClapT = 0.62; },
-  gel(hex) { gelTarget.set(hex || COL.amber); },
+  gel(hex) { gelTarget.set(hex || gelDefault); },
+  theme(hex) { gelDefault.set(hex || COL.amber); gelTarget.copy(gelDefault); },
   setDay(on) { dayTarget = on ? 1 : 0; },
   drone(on) { pipOn = FANCY && on; },
 };

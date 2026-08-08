@@ -235,7 +235,7 @@
     };
     nle.addEventListener('pointerdown', function (e) {
       nleDrag = true;
-      nle.setPointerCapture(e.pointerId);
+      try { nle.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
       nleScrub(e);
     });
     nle.addEventListener('pointermove', function (e) { if (nleDrag) nleScrub(e); });
@@ -576,6 +576,54 @@
       addEventListener(ev, function (e) {
         if (tourOn && e.target !== tourBtn) endTour(false);
       }, { passive: true });
+    });
+  }
+
+  /* ---------------------------------------------- tint wheel
+     One ring that recolours the site's accent — drag around it to pick a
+     hue, double-click to come back to Awara amber. */
+  var hueWheel = document.getElementById('hueWheel');
+  if (hueWheel) {
+    var hueDot = hueWheel.querySelector('i');
+    var STOPS = [[232, 69, 69], [244, 178, 60], [124, 214, 90], [70, 200, 178], [77, 124, 255], [176, 124, 255], [232, 69, 69]];
+    var applyTint = function (c) {
+      var hex = '#' + c.map(function (v) { return v.toString(16).padStart(2, '0'); }).join('');
+      document.documentElement.style.setProperty('--amber', hex);
+      document.documentElement.style.setProperty('--amber-rgb', c.join(', '));
+      if (window.__lot) window.__lot.theme(hex);
+      try { localStorage.setItem('tint', JSON.stringify(c)); } catch (err) { /* private mode */ }
+    };
+    // bring back a returning visitor's colour
+    try {
+      var saved = JSON.parse(localStorage.getItem('tint'));
+      if (saved && saved.length === 3) setTimeout(function () { applyTint(saved); }, 450);
+    } catch (err) { /* fine, default amber */ }
+    var setHue = function (e) {
+      var r = hueWheel.getBoundingClientRect();
+      var x = e.clientX - r.left - r.width / 2;
+      var y = e.clientY - r.top - r.height / 2;
+      var a = Math.atan2(y, x);
+      var deg = (a * 180 / Math.PI + 90 + 360) % 360;   // conic starts at 12 o'clock
+      var f = deg / 360 * 6;
+      var i0 = Math.floor(f), t = f - i0;
+      var c = STOPS[i0].map(function (v, k) { return Math.round(v + (STOPS[i0 + 1][k] - v) * t); });
+      applyTint(c);
+      hueDot.style.transform = 'translate(' + (Math.cos(a) * 7).toFixed(1) + 'px,' + (Math.sin(a) * 7).toFixed(1) + 'px)';
+    };
+    var hueDrag = false;
+    hueWheel.addEventListener('pointerdown', function (e) {
+      hueDrag = true;
+      try { hueWheel.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+      setHue(e);
+    });
+    hueWheel.addEventListener('pointermove', function (e) { if (hueDrag) setHue(e); });
+    hueWheel.addEventListener('pointerup', function () { hueDrag = false; });
+    hueWheel.addEventListener('dblclick', function () {
+      document.documentElement.style.removeProperty('--amber');
+      document.documentElement.style.removeProperty('--amber-rgb');
+      hueDot.style.transform = '';
+      if (window.__lot) window.__lot.theme(null);
+      try { localStorage.removeItem('tint'); } catch (err) { /* fine */ }
     });
   }
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://iabhi.github.io/sitemap.xml
+Sitemap: https://iabhivashisth.github.io/sitemap.xml
