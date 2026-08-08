@@ -580,7 +580,9 @@ const filmStrip = new THREE.Group();
     holderG.position.set(Math.sin(a) * 26, 6.4 + (i % 2) * 1.5, -20 - Math.cos(a) * 6 + 6);
     holderG.rotation.y = -a * 0.9;
     holderG.userData.baseY = holderG.position.y;
+    holderG.userData.baseZ = holderG.position.z;
     holderG.userData.phase = i * 1.3;
+    holderG.userData.hl = 0;          // hover link from the work cards
     filmStrip.add(holderG);
   });
   scene.add(filmStrip);
@@ -1006,6 +1008,77 @@ if (!TOUCH) {
   }, { passive: true });
 }
 
+/* ------------------------------------------------ the look
+   Grade slider (LOG ↔ GRADED) plus a rack-focus blur driven by scroll speed,
+   both composed into one CSS filter on the WebGL canvas. */
+let gradeV = 1;      // 1 = graded, 0 = flat log
+let blurV = 0;
+let lastFilter = '';
+function applyLook() {
+  const g = gradeV;
+  let f = `saturate(${(0.36 + 0.64 * g).toFixed(3)}) contrast(${(0.84 + 0.16 * g).toFixed(3)}) brightness(${(1.13 - 0.13 * g).toFixed(3)})`;
+  if (blurV > 0.04) f += ` blur(${blurV.toFixed(2)}px)`;
+  if (f !== lastFilter) { lastFilter = f; canvas.style.filter = f; }
+}
+
+/* iris wipe — a circular vignette that dips closed as the camera flies to a
+   new corner of the lot */
+const irisEl = document.getElementById('iris');
+const IRIS_DUR = 0.9;
+let irisT = IRIS_DUR;
+let stageIdx = -1;
+
+/* ACTION! — both searchlights swing onto the screen for a few seconds */
+let actionT = 0;
+
+/* hooks for the DOM layer */
+let hlIndex = -1;
+window.__lot = {
+  setGrade(v) { gradeV = clamp01(v); applyLook(); },
+  highlightFrame(i) { hlIndex = i; },
+  action() { actionT = 5.2; },
+};
+
+/* draggable projector reel — grab it in the hero to scrub the showreel */
+const reelDrag = { near: false, on: false, lastX: 0, vel: 0, px: 0, py: 0, vis: false };
+const _proj = new THREE.Vector3();
+if (!TOUCH && !REDUCED) {
+  addEventListener('pointermove', (e) => {
+    if (reelDrag.on) {
+      const dx = e.clientX - reelDrag.lastX;
+      reelDrag.lastX = e.clientX;
+      reelDrag.vel = dx * 0.16;
+      for (const r of reels) r.rotation.z -= dx * 0.012;
+      if (screenVideo.duration) {
+        let t = screenVideo.currentTime + dx * 0.03;
+        const d = screenVideo.duration;
+        screenVideo.currentTime = ((t % d) + d) % d;
+      }
+      return;
+    }
+    const near = reelDrag.vis &&
+      Math.hypot(e.clientX - reelDrag.px, e.clientY - reelDrag.py) < 76 &&
+      scrollY < innerHeight * 0.6;
+    if (near !== reelDrag.near) {
+      reelDrag.near = near;
+      document.body.style.cursor = near ? 'grab' : '';
+    }
+  }, { passive: true });
+  addEventListener('pointerdown', (e) => {
+    if (!reelDrag.near) return;
+    reelDrag.on = true;
+    reelDrag.lastX = e.clientX;
+    reelDrag.vel = 0;
+    screenVideo.pause();
+    document.body.style.cursor = 'grabbing';
+  });
+  addEventListener('pointerup', () => {
+    if (!reelDrag.on) return;
+    reelDrag.on = false;
+    document.body.style.cursor = reelDrag.near ? 'grab' : '';
+  });
+}
+
 /* scroll state: a different corner of the lot for every section */
 const STAGE_DEFS = [
   ['home',       [0, 4.5, 26],    [0, 6.5, -40],   1.0],   // projector alley
@@ -1042,6 +1115,11 @@ const _camLook = new THREE.Vector3();
 function stageCamera() {
   let i = 0;
   while (i < stages.length - 1 && scrollY >= stages[i + 1].y) i++;
+  // crossing into a new scene closes the iris for a beat
+  if (i !== stageIdx) {
+    if (stageIdx !== -1 && !REDUCED && irisT >= IRIS_DUR) irisT = 0;
+    stageIdx = i;
+  }
   const a = stages[i];
   const b = stages[Math.min(i + 1, stages.length - 1)];
   const span = Math.max(1, b.y - a.y);
@@ -1062,6 +1140,10 @@ addEventListener('resize', () => {
 
 /* ------------------------------------------------ loop */
 const clock = new THREE.Clock();
+const _sdir = new THREE.Vector3();
+const _sup = new THREE.Vector3(0, 1, 0);
+const _squat = new THREE.Quaternion();
+const _seul = new THREE.Euler();
 
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1085,13 +1167,41 @@ function tick() {
     );
     camera.lookAt(_camLook.x + mouse.x * 5, _camLook.y - mouse.y * 2, _camLook.z);
 
-    // the projector never stops — faster when the visitor scrolls fast
-    const spin = 2.4 * (1 + scrollVel * 0.12);
-    for (const r of reels) r.rotation.z += dt * spin;
+    // the projector never stops — faster when the visitor scrolls fast,
+    // still under the visitor's hand when they've grabbed the reel
+    if (reelDrag.on) {
+      // spun directly by the pointer; nothing to add here
+    } else if (Math.abs(reelDrag.vel) > 0.02) {
+      for (const r of reels) r.rotation.z -= reelDrag.vel * dt * 14;
+      reelDrag.vel *= 1 - Math.min(1, dt * 2.2);
+      if (Math.abs(reelDrag.vel) <= 0.02 && screenVideo.paused) screenVideo.play().catch(() => {});
+    } else {
+      const spin = 2.4 * (1 + scrollVel * 0.12);
+      for (const r of reels) r.rotation.z += dt * spin;
+    }
+
+    // where the reel sits on screen, for the grab affordance
+    reels[0].getWorldPosition(_proj).project(camera);
+    reelDrag.vis = _proj.z < 1;
+    reelDrag.px = (_proj.x * 0.5 + 0.5) * innerWidth;
+    reelDrag.py = (-_proj.y * 0.5 + 0.5) * innerHeight;
 
     // beam breathes very slightly, like a live lamp
     beamMat.opacity = 0.11 + Math.sin(t * 1.7) * 0.012;
     lensGlow.material.opacity = 0.85 + Math.sin(t * 2.3) * 0.08;
+  }
+
+  // rack focus: fast scrolling softens the lot, then it pulls back to sharp
+  if (!REDUCED) {
+    blurV += (Math.min(scrollVel * 0.055, 2.6) - blurV) * 0.1;
+  }
+  applyLook();
+
+  // iris wipe
+  if (irisEl && irisT < IRIS_DUR) {
+    irisT += dt;
+    const k = Math.sin(Math.PI * clamp01(irisT / IRIS_DUR));
+    irisEl.style.setProperty('--r', (160 - 122 * k).toFixed(1) + 'vmax');
   }
 
   // camera tally blink
@@ -1105,19 +1215,34 @@ function tick() {
     neonLight.intensity = neonMat.opacity > 0.9 ? 42 : 18;
   }
 
-  // film-strip frames breathe on their arc
-  for (const f of filmStrip.children) {
-    f.position.y = f.userData.baseY + Math.sin(t * 0.6 + f.userData.phase) * 0.35;
-  }
+  // film-strip frames breathe on their arc; a hovered work card pulls its
+  // frame forward out of the strip
+  filmStrip.children.forEach((f, i) => {
+    f.userData.hl += ((i === hlIndex ? 1 : 0) - f.userData.hl) * Math.min(1, dt * 7);
+    const hl = f.userData.hl;
+    f.position.y = f.userData.baseY + Math.sin(t * 0.6 + f.userData.phase) * 0.35 * (1 - hl);
+    f.position.z = f.userData.baseZ + hl * 3.2;
+    f.scale.setScalar(1 + hl * 0.22);
+  });
 
   // rack reels idle over the call sheet
   for (const r of rackReels) r.rotation.z += dt * r.userData.speed * (1 + scrollVel * 0.08);
 
-  // searchlights sweep
+  // searchlights sweep — unless ACTION! has them trained on the screen
+  if (actionT > 0) actionT -= dt;
   for (const s of searchlights) {
-    s.rotation.z = Math.sin(t * 0.4 + s.userData.phase) * 0.5;
-    s.rotation.x = Math.cos(t * 0.33 + s.userData.phase) * 0.35;
-    s.userData.beam.material.opacity = 0.085 + Math.sin(t * 0.9 + s.userData.phase) * 0.03;
+    if (actionT > 0) {
+      _sdir.set(SCREEN_POS.x - s.position.x, 11, SCREEN_POS.z - s.position.z).normalize();
+      _squat.setFromUnitVectors(_sup, _sdir);
+      s.quaternion.slerp(_squat, Math.min(1, dt * 4));
+      s.userData.beam.material.opacity += (0.3 - s.userData.beam.material.opacity) * Math.min(1, dt * 3);
+    } else {
+      _seul.set(Math.cos(t * 0.33 + s.userData.phase) * 0.35, 0, Math.sin(t * 0.4 + s.userData.phase) * 0.5);
+      _squat.setFromEuler(_seul);
+      s.quaternion.slerp(_squat, Math.min(1, dt * 3));
+      const target = 0.085 + Math.sin(t * 0.9 + s.userData.phase) * 0.03;
+      s.userData.beam.material.opacity += (target - s.userData.beam.material.opacity) * Math.min(1, dt * 3);
+    }
   }
 
   // playhead scrubs the edit bay, loops like a preview render

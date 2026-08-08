@@ -62,6 +62,23 @@
   <!-- film grain overlay -->
   <div class="grain" aria-hidden="true"></div>
 
+  <!-- iris wipe between scenes -->
+  <div class="iris" id="iris" aria-hidden="true"></div>
+
+  <!-- ACTION! easter-egg flash -->
+  <div class="action-flash mono" id="actionFlash" aria-hidden="true">ACTION!</div>
+
+  <!-- camera HUD: rec light, running timecode, and the grade slider -->
+  <div class="camhud mono" id="camhud" aria-hidden="true">
+    <span class="camhud__rec"><i>●</i>&nbsp;REC</span>
+    <span class="camhud__tc" id="camTC">00:00:00:00</span>
+    <span class="camhud__grade">
+      <span>LOG</span>
+      <input type="range" id="gradeRange" min="0" max="100" value="100" aria-label="Colour grade, log to graded">
+      <span>GRADED</span>
+    </span>
+  </div>
+
   <!-- scroll progress: a strip of celluloid down the right edge -->
   <div class="filmbar" aria-hidden="true">
     <span class="filmbar__cursor" id="scrollCursor">
@@ -276,7 +293,7 @@
       </div>
 
       <div class="works" id="works">
-        <article class="workcard reveal" data-cat="directed" style="--i:0">
+        <article class="workcard reveal" data-cat="directed" data-frame="0" style="--i:0">
           <button class="workcard__open" data-yt="ZlQkWF71Prw" type="button" aria-label="Play: Meet The Makers — The Kambli Family">
             <img src="assets/img/work/kambli.jpg" alt="Sculptor's workshop — Meet The Makers: the Kambli family" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>
@@ -288,7 +305,7 @@
           </div>
         </article>
 
-        <article class="workcard reveal" data-cat="directed" style="--i:1">
+        <article class="workcard reveal" data-cat="directed" data-frame="1" style="--i:1">
           <button class="workcard__open" data-yt="UX0vjtRcGG8" type="button" aria-label="Play: Soldier's Life at Siachen Glacier">
             <img src="assets/img/work/siachen.jpg" alt="Soldiers on the Siachen glacier" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>
@@ -312,7 +329,7 @@
           </div>
         </article>
 
-        <article class="workcard reveal" data-cat="long" style="--i:3">
+        <article class="workcard reveal" data-cat="long" data-frame="2" style="--i:3">
           <button class="workcard__open" data-yt="m4tswsr7Syo" type="button" aria-label="Play: India's first bird hospital documentary">
             <img src="assets/img/work/birdhospital.jpg" alt="Hands holding a rescued bird — Delhi bird hospital documentary" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>
@@ -324,7 +341,7 @@
           </div>
         </article>
 
-        <article class="workcard reveal" data-cat="long" style="--i:4">
+        <article class="workcard reveal" data-cat="long" data-frame="3" style="--i:4">
           <button class="workcard__open" data-yt="qEnku8TF_gc" type="button" aria-label="Play: World's only village similar to the Moon">
             <img src="assets/img/work/moonvillage.jpg" alt="Lunar landscape of Ladakh" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>
@@ -336,7 +353,7 @@
           </div>
         </article>
 
-        <article class="workcard reveal" data-cat="long" style="--i:5">
+        <article class="workcard reveal" data-cat="long" data-frame="4" style="--i:5">
           <button class="workcard__open" data-yt="iHU6wDV0XTg" type="button" aria-label="Play: Sunday Brunch episode 179">
             <img src="assets/img/work/sanjubaba.jpg" alt="Sunday Brunch episode still" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>
@@ -348,7 +365,7 @@
           </div>
         </article>
 
-        <article class="workcard reveal" data-cat="long" style="--i:6">
+        <article class="workcard reveal" data-cat="long" data-frame="5" style="--i:6">
           <button class="workcard__open" data-yt="HxiH1RC_Ekc" type="button" aria-label="Play: Bingo challenge at Singapore Changi Airport">
             <img src="assets/img/work/bingo.jpg" alt="Singapore Changi airport at night" loading="lazy">
             <span class="workcard__play" aria-hidden="true">▶</span>

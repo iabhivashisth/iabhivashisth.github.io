@@ -254,4 +254,55 @@
       openLightbox('<video src="assets/video/showreel.mp4" controls autoplay playsinline></video>');
     });
   }
+
+  /* ---------------------------------------------- camera HUD
+     Running production timecode plus the LOG ↔ GRADED slider that regrades
+     the whole 3D lot (scene.js exposes window.__lot). */
+  var camTC = document.getElementById('camTC');
+  if (camTC && !REDUCED) {
+    var tcStart = performance.now();
+    setInterval(function () {
+      if (document.hidden) return;
+      var s = (performance.now() - tcStart) / 1000;
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      camTC.textContent = '00:' + pad(Math.floor(s / 60) % 60) + ':' + pad(Math.floor(s) % 60) + ':' + pad(Math.floor(s * 24) % 24);
+    }, 42);
+  }
+
+  var gradeRange = document.getElementById('gradeRange');
+  if (gradeRange) {
+    gradeRange.addEventListener('input', function () {
+      if (window.__lot) window.__lot.setGrade(gradeRange.value / 100);
+    });
+  }
+
+  /* ---------------------------------------------- work cards ↔ the 3D strip */
+  if (matchMedia('(hover: hover)').matches) {
+    document.querySelectorAll('.workcard[data-frame]').forEach(function (card) {
+      var i = +card.dataset.frame;
+      card.addEventListener('pointerenter', function () { if (window.__lot) window.__lot.highlightFrame(i); });
+      card.addEventListener('pointerleave', function () { if (window.__lot) window.__lot.highlightFrame(-1); });
+    });
+  }
+
+  /* ---------------------------------------------- ACTION! easter egg
+     Type "action": the searchlights swing onto the screen, the slate flash
+     fires, and the showreel rolls. */
+  var actionFlash = document.getElementById('actionFlash');
+  var buf = '';
+  addEventListener('keydown', function (e) {
+    if (e.key.length !== 1) return;
+    buf = (buf + e.key.toLowerCase()).slice(-6);
+    if (buf !== 'action') return;
+    buf = '';
+    if (window.__lot) window.__lot.action();
+    if (actionFlash) {
+      actionFlash.classList.remove('go');
+      void actionFlash.offsetWidth; // restart the animation
+      actionFlash.classList.add('go');
+    }
+    setTimeout(function () {
+      if (lightbox.hidden) openLightbox('<video src="assets/video/showreel.mp4" controls autoplay playsinline></video>');
+    }, 1100);
+  });
 })();
