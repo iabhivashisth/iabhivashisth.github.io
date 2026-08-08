@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://iabhi.github.io/sitemap.xml

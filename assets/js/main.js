@@ -1,0 +1,257 @@
+/* Interaction layer: nav state, IST clock, scroll reveals, stat counters,
+   the work filter, and the video lightbox. No dependencies. */
+(function () {
+  'use strict';
+
+  var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------------------------------------- nav */
+  var nav = document.getElementById('nav');
+  var burger = document.getElementById('burger');
+  var links = document.getElementById('navLinks');
+
+  function navState() {
+    nav.classList.toggle('scrolled', scrollY > 30);
+  }
+  addEventListener('scroll', navState, { passive: true });
+  navState();
+
+  burger.addEventListener('click', function () {
+    var open = links.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open);
+  });
+  links.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') {
+      links.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // active section highlight
+  var sections = document.querySelectorAll('section[id]');
+  var navAnchors = links.querySelectorAll('a[href^="#"]');
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      navAnchors.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id);
+      });
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  sections.forEach(function (s) { spy.observe(s); });
+
+  /* ---------------------------------------------- IST clock */
+  var clockEl = document.getElementById('clock');
+  if (clockEl) {
+    var fmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    });
+    var tickClock = function () { clockEl.textContent = fmt.format(new Date()); };
+    tickClock();
+    setInterval(tickClock, 1000);
+  }
+
+  /* ---------------------------------------------- cursor spotlight */
+  var spot = document.getElementById('spotlight');
+  if (spot && matchMedia('(hover: hover)').matches) {
+    addEventListener('pointermove', function (e) {
+      spot.style.setProperty('--sx', e.clientX + 'px');
+      spot.style.setProperty('--sy', e.clientY + 'px');
+    }, { passive: true });
+  }
+
+  /* ---------------------------------------------- split section titles */
+  document.querySelectorAll('.sec__title').forEach(function (title) {
+    var text = title.textContent;
+    title.textContent = '';
+    title.setAttribute('aria-label', text);
+    for (var i = 0; i < text.length; i++) {
+      var s = document.createElement('span');
+      s.className = 'ch';
+      s.setAttribute('aria-hidden', 'true');
+      s.style.setProperty('--c', i);
+      s.textContent = text[i] === ' ' ? ' ' : text[i];
+      title.appendChild(s);
+    }
+  });
+
+  /* ---------------------------------------------- pointer tilt */
+  if (!REDUCED && matchMedia('(hover: hover)').matches) {
+    document.querySelectorAll('.stat, .service, .panel, .workcard, .legend, .pass').forEach(function (card) {
+      card.setAttribute('data-tilt', '');
+      card.addEventListener('pointermove', function (e) {
+        var r = card.getBoundingClientRect();
+        var rx = ((e.clientY - r.top) / r.height - 0.5) * -5;
+        var ry = ((e.clientX - r.left) / r.width - 0.5) * 5;
+        card.style.transform = 'perspective(700px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-3px)';
+      });
+      card.addEventListener('pointerleave', function () {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  /* ---------------------------------------------- reveals */
+  var revealer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        en.target.classList.add('in');
+        revealer.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(function (el) { revealer.observe(el); });
+
+  /* ---------------------------------------------- stat counters */
+  function countUp(el) {
+    var target = +el.dataset.count;
+    var suffix = el.dataset.suffix || '';
+    if (REDUCED) { el.textContent = target + suffix; return; }
+    var t0 = null;
+    var dur = 1400;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var counter = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        countUp(en.target);
+        counter.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.6 });
+  document.querySelectorAll('[data-count]').forEach(function (el) { counter.observe(el); });
+
+  /* ---------------------------------------------- concept-chip icons */
+  var STROKE = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  var ICONS = {
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
+    wave: '<path d="M2 12h2l2-7 3 14 3-10 2 5 2-3 2 1h4"/>',
+    palette: '<circle cx="12" cy="12" r="10"/><circle cx="8" cy="10" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="10" r="1.2"/><path d="M12 22a10 10 0 0 1 0-20"/>',
+    motion: '<polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="5" x2="23" y2="5"/><line x1="19" y1="12" x2="23" y2="12"/><line x1="19" y1="19" x2="23" y2="19"/>',
+    captions: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 13h4M6 16h8M14 13h4"/>',
+    clap: '<path d="M20.2 6 3 11l-.9-2.4a2 2 0 0 1 1.3-2.5l13.5-4a2 2 0 0 1 2.5 1.4z"/><path d="M6.2 5.3l3.1 3.9M10.6 4l3.1 3.9M15 2.7l3.1 3.9"/><rect x="3" y="11" width="18" height="10" rx="1.5"/>',
+    cam: '<path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/>',
+    sheet: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    thumb: '<rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M22 15l-5-5L6 21"/>',
+    poster: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+    brand: '<path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/>',
+    canva: '<circle cx="12" cy="12" r="10"/><path d="M8 14c1 2 4 2.5 6 1M9 9.5a2 2 0 1 1 4 .5c0 2-3 2-3 4"/>',
+    ads: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    meta: '<path d="M2 12c0-3.5 2-6 4.5-6S11 9 12 12c1-3 3-6 5.5-6S22 8.5 22 12s-2 6-4.5 6S13 15 12 12c-1 3-3 6-5.5 6S2 15.5 2 12z"/>',
+    lead: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+    yt: '<rect x="2" y="5" width="20" height="14" rx="4"/><polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"/>',
+  };
+  document.querySelectorAll('[data-icon]').forEach(function (el) {
+    var body = ICONS[el.getAttribute('data-icon')];
+    if (!body) return;
+    var span = document.createElement('span');
+    span.className = 'chip-icon';
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" ' + STROKE + '>' + body + '</svg>';
+    el.insertBefore(span, el.firstChild);
+  });
+
+  /* ---------------------------------------------- filmstrip scroll bar */
+  var scrollCursor = document.getElementById('scrollCursor');
+  if (scrollCursor) {
+    var barTick = function () {
+      var max = document.documentElement.scrollHeight - innerHeight;
+      var p = max > 0 ? scrollY / max : 0;
+      scrollCursor.style.top = (p * 100).toFixed(2) + '%';
+    };
+    addEventListener('scroll', barTick, { passive: true });
+    barTick();
+  }
+
+  /* ---------------------------------------------- camera down the call sheet */
+  var route = document.getElementById('route');
+  var routeCam = document.getElementById('routeCam');
+  if (route && routeCam) {
+    var nodes = route.querySelectorAll('.leg__node');
+    var routeTick = function () {
+      var r = route.getBoundingClientRect();
+      var focus = innerHeight * 0.45;
+      var p = Math.min(1, Math.max(0, (focus - r.top) / r.height));
+      routeCam.style.top = (p * 100).toFixed(2) + '%';
+      nodes.forEach(function (n) {
+        n.classList.toggle('passed', n.getBoundingClientRect().top < focus);
+      });
+    };
+    addEventListener('scroll', routeTick, { passive: true });
+    routeTick();
+  }
+
+  /* ---------------------------------------------- work filter */
+  var tabs = document.querySelectorAll('.worktab');
+  var cards = document.querySelectorAll('.workcard');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var f = tab.dataset.filter;
+      tabs.forEach(function (t) {
+        t.classList.toggle('active', t === tab);
+        t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      });
+      cards.forEach(function (c) {
+        var show = f === 'all' || c.dataset.cat === f;
+        c.classList.toggle('workcard--hide', !show);
+      });
+    });
+  });
+
+  /* ---------------------------------------------- video lightbox
+     Cards with data-yt open an embedded player; data-href opens the channel
+     in a new tab. The showreel button plays the local reel. */
+  var lightbox = document.getElementById('lightbox');
+  var lightboxFrame = document.getElementById('lightboxFrame');
+  var lightboxClose = document.getElementById('lightboxClose');
+  var lastFocus = null;
+
+  function openLightbox(html) {
+    lastFocus = document.activeElement;
+    lightboxFrame.innerHTML = html;
+    lightbox.hidden = false;
+    document.body.classList.add('lightbox-open');
+    lightboxClose.focus();
+  }
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightboxFrame.innerHTML = '';
+    document.body.classList.remove('lightbox-open');
+    if (lastFocus) lastFocus.focus();
+  }
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function (e) {
+    if (e.target === lightbox) closeLightbox();
+  });
+  addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+  });
+
+  document.querySelectorAll('.workcard__open').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var yt = btn.dataset.yt;
+      var href = btn.dataset.href;
+      if (yt && /^[\w-]{6,16}$/.test(yt)) {
+        openLightbox('<iframe src="https://www.youtube-nocookie.com/embed/' + yt +
+          '?autoplay=1&rel=0" title="Video player" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>');
+      } else if (href) {
+        window.open(href, '_blank', 'noopener');
+      }
+    });
+  });
+
+  var showreelBtn = document.getElementById('showreelBtn');
+  if (showreelBtn) {
+    showreelBtn.addEventListener('click', function () {
+      openLightbox('<video src="assets/video/showreel.mp4" controls autoplay playsinline></video>');
+    });
+  }
+})();

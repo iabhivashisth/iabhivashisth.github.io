@@ -1,0 +1,12 @@
+{
+  "name": "Abhishek Vashisth — Awara Films",
+  "short_name": "Awara Films",
+  "description": "Film maker, video editor and graphic designer. From set to screen — all me.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07060a",
+  "theme_color": "#07060a",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

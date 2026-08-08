@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#07060a"/>
+  <rect x="8" y="22" width="48" height="30" rx="4" fill="#f4b23c"/>
+  <g transform="rotate(-14 12 18)">
+    <rect x="6" y="10" width="50" height="10" rx="2" fill="#f2ede3"/>
+    <path d="M10 10l8 10h6l-8-10zM26 10l8 10h6l-8-10zM42 10l8 10h6l-8-10z" fill="#07060a"/>
+  </g>
+  <text x="32" y="44" font-family="Arial Narrow, sans-serif" font-size="17" font-weight="bold" fill="#07060a" text-anchor="middle">AV</text>
+</svg>

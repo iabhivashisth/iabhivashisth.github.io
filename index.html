@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abhishek Vashisth — Film Maker · Video Editor | Awara Films</title>
+  <meta name="description" content="Abhishek Vashisth — film maker, video editor and graphic designer with 5+ years across production and post. Founder of Awara Films. Edited and directed work for Curly Tales, Scoopwhoop, Ok Tested, KK Creates and more — 10M+ views.">
+  <meta name="author" content="Abhishek Vashisth">
+
+  <link rel="canonical" href="https://iabhi.github.io/">
+  <meta name="theme-color" content="#07060a">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Abhishek Vashisth — Film Maker · Video Editor | Awara Films">
+  <meta property="og:description" content="From set to screen — all me. Films, edits and design for Curly Tales, Scoopwhoop, Ok Tested, KK Creates and more. 10M+ views.">
+  <meta property="og:url" content="https://iabhi.github.io/">
+  <meta property="og:site_name" content="Awara Films">
+  <meta property="og:image" content="https://iabhi.github.io/assets/img/work/kambli.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Abhishek Vashisth — Film Maker · Video Editor | Awara Films">
+  <meta name="twitter:description" content="From set to screen — all me. 10M+ views across directed films, edits and design.">
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Abhishek Vashisth",
+    "url": "https://iabhi.github.io/",
+    "jobTitle": "Film Maker, Video Editor & Graphic Designer",
+    "worksFor": { "@type": "Organization", "name": "Awara Films" },
+    "address": { "@type": "PostalAddress", "addressLocality": "New Delhi", "addressCountry": "IN" },
+    "email": "mailto:abhiwork.704@gmail.com",
+    "telephone": "+91 7011608755",
+    "knowsAbout": ["Film Making", "Video Editing", "Adobe Premiere Pro", "DaVinci Resolve", "After Effects", "Graphic Design", "Production Coordination", "YouTube Content"],
+    "sameAs": [
+      "https://www.linkedin.com/in/abhishek-vashisth-a51b832a7/",
+      "https://www.youtube.com/@abhishekvashisthfilm",
+      "https://www.instagram.com/iabhivashisth"
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+  <!-- 3D studio-lot scene (whole-page backdrop) -->
+  <div class="scene" id="scene" aria-hidden="true"><canvas id="webgl"></canvas></div>
+
+  <!-- cursor spotlight -->
+  <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+
+  <!-- film grain overlay -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- scroll progress: a strip of celluloid down the right edge -->
+  <div class="filmbar" aria-hidden="true">
+    <span class="filmbar__cursor" id="scrollCursor">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4h-4z"/></svg>
+    </span>
+  </div>
+
+  <!-- intro: slate → projector → screen -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro__vignette"></div>
+    <div class="intro__flash" id="introFlash"></div>
+    <div class="intro__hud mono">
+      <span class="intro__blink" aria-hidden="true">●</span>
+      <span>REC</span>
+      <span id="introLine">SLATE IN · SCENE 01 · TAKE 05</span>
+    </div>
+    <div class="intro__alt mono">TC <span id="introTC">00:00:00:00</span></div>
+    <button class="intro__skip mono" id="introSkip">SKIP →</button>
+  </div>
+
+  <!-- ================= NAV ================= -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#home" class="nav__brand" aria-label="Home">
+        <span class="brand__mark" aria-hidden="true">AV</span>
+        <span class="brand__code" aria-hidden="true">AWARA FILMS</span>
+      </a>
+      <nav class="nav__links" id="navLinks" aria-label="Primary">
+        <a href="#about">About</a>
+        <a href="#awara">Awara Films</a>
+        <a href="#work">Work</a>
+        <a href="#experience">Experience</a>
+        <a href="#clients">Clients</a>
+        <a href="#skills">Skills</a>
+        <a href="#graphics">Design</a>
+        <a href="#contact">Contact</a>
+        <a class="nav__cta" href="Abhishek_Vashisth_CV.pdf" target="_blank" rel="noopener">CV ↧</a>
+      </nav>
+      <button class="nav__burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero" id="home">
+    <div class="hero__inner">
+      <p class="hero__eyebrow reveal"><span class="dot dot--live" aria-hidden="true"></span>Awara Films · open for commissions</p>
+
+      <h1 class="hero__name">
+        <span class="hero__line"><span class="hero__word">ABHISHEK</span></span>
+        <span class="hero__line"><span class="hero__word hero__word--outline">VASHISTH</span></span>
+      </h1>
+
+      <p class="hero__role reveal">Film Maker · Video Editor · Graphic Designer</p>
+      <p class="hero__sub reveal">From set to screen — all me. Five-plus years directing, shooting, cutting and
+        designing stories for India's biggest digital creators. The films I've touched have been watched more
+        than ten million times.</p>
+
+      <div class="hero__cta reveal">
+        <button class="btn btn--amber" id="showreelBtn" type="button">▶ Watch showreel</button>
+        <a class="btn btn--ghost" href="#work">See the work</a>
+      </div>
+
+      <div class="hero__strip mono reveal" aria-hidden="true">
+        <span>DEL <b id="clock">--:--:--</b> IST</span>
+        <span class="strip__sep">/</span>
+        <span>5+ YRS · SET TO SCREEN</span>
+        <span class="strip__sep">/</span>
+        <span>10M+ VIEWS</span>
+        <span class="strip__sep">/</span>
+        <span>SCENE 01 · TAKE 05 · ACTION</span>
+      </div>
+    </div>
+
+    <a class="hero__scroll mono" href="#about" aria-label="Scroll to about">
+      <span>ROLL</span><span class="scroll__beam" aria-hidden="true"></span>
+    </a>
+  </section>
+
+  <!-- client ticker -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__track mono">
+      <span>CURLY TALES&ensp;/&ensp;SCOOPWHOOP&ensp;/&ensp;OK TESTED&ensp;/&ensp;KK CREATES&ensp;/&ensp;CLOVIA&ensp;/&ensp;HDFC SKY&ensp;/&ensp;SUNDAY LABS&ensp;/&ensp;CODESPACE&ensp;/&ensp;NOMADS NATION&ensp;/&ensp;10M+ VIEWS&ensp;/&ensp;15+ HAPPY CLIENTS&ensp;/&ensp;</span>
+      <span>CURLY TALES&ensp;/&ensp;SCOOPWHOOP&ensp;/&ensp;OK TESTED&ensp;/&ensp;KK CREATES&ensp;/&ensp;CLOVIA&ensp;/&ensp;HDFC SKY&ensp;/&ensp;SUNDAY LABS&ensp;/&ensp;CODESPACE&ensp;/&ensp;NOMADS NATION&ensp;/&ensp;10M+ VIEWS&ensp;/&ensp;15+ HAPPY CLIENTS&ensp;/&ensp;</span>
+    </div>
+  </div>
+
+  <!-- ================= ABOUT ================= -->
+  <section class="section" id="about">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">01 · COLD OPEN</span>
+        <h2 class="sec__title">About</h2>
+      </header>
+
+      <div class="about">
+        <div class="about__text reveal">
+          <p class="about__lede">Welcome to the realm of visual storytelling. I'm a film maker and video editor
+            with <em>5+ years</em> across production, post-production and design.</p>
+          <p>I'm driven by a deep passion for bringing stories to life through the art of filmmaking. Whether
+            it's a <strong>short film, documentary, promotional video or advertisement</strong>, I pour my
+            creativity and technical craft into every frame — on set coordinating the shoot, and in the edit
+            bay shaping the story.</p>
+          <p>I've cut and coordinated video for <strong>Curly Tales</strong>, <strong>Scoopwhoop</strong>,
+            <strong>Ok Tested</strong> and <strong>KK Creates</strong>, directed short films with
+            <strong>Head Field Films</strong>, and run paid campaigns on Google and Meta. My goal is simple:
+            exceed the brief, and leave the audience with something that stays.</p>
+
+          <div class="aboutwave" aria-hidden="true">
+            <canvas id="tcCanvas"></canvas>
+            <span class="stat__lbl mono">A1 · DIALOGUE · SYNC LOCKED · 24 FPS</span>
+          </div>
+        </div>
+
+        <div class="about__side">
+          <figure class="about__film reveal reveal--flip">
+            <video src="assets/video/about.mp4" poster="assets/img/work/about-poster.jpg" autoplay muted loop playsinline></video>
+            <figcaption class="mono">BEHIND THE LENS · A. VASHISTH</figcaption>
+          </figure>
+          <ul class="stats" role="list">
+            <li class="stat reveal" style="--i:0"><b class="stat__num mono" data-count="5" data-suffix="+">0</b><span class="stat__lbl">Years, set to screen</span></li>
+            <li class="stat reveal" style="--i:1"><b class="stat__num mono" data-count="10" data-suffix="M+">0</b><span class="stat__lbl">Views on work I've cut</span></li>
+            <li class="stat reveal" style="--i:2"><b class="stat__num mono" data-count="15" data-suffix="+">0</b><span class="stat__lbl">Happy clients</span></li>
+            <li class="stat reveal" style="--i:3"><b class="stat__num mono" data-count="30" data-suffix="+">0</b><span class="stat__lbl">Achievements</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AWARA FILMS ================= -->
+  <section class="section" id="awara">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">02 · THE BANNER</span>
+        <h2 class="sec__title">Awara Films</h2>
+        <p class="sec__note">My independent film venture — running since 2020, alongside everything else.</p>
+      </header>
+
+      <div class="awara">
+        <div class="awara__pitch reveal">
+          <p class="about__lede">A one-man production house. <em>You bring the idea — I bring it to the screen.</em></p>
+          <p>With over five years of industry experience, Awara Films exists to bring your vision to life. From
+            crafting content across platforms to collaborating with India's top YouTube creators, the goal is
+            top-notch quality tailored to you — and your satisfaction with every project.</p>
+          <div class="hero__cta">
+            <a class="btn btn--amber" href="#contact">Start a project</a>
+            <a class="btn btn--ghost" href="#clients">Who I've worked with</a>
+          </div>
+        </div>
+
+        <div class="services">
+          <article class="service reveal" style="--i:0">
+            <span class="service__no mono">S·01</span>
+            <h3>Advertisements</h3>
+            <p>Brand films and performance creative — concept, shoot, cut, deliver. Backed by hands-on
+              Google &amp; Meta campaign experience, so the ad is built to convert, not just to look good.</p>
+          </article>
+          <article class="service reveal" style="--i:1">
+            <span class="service__no mono">S·02</span>
+            <h3>Fiction &amp; music videos</h3>
+            <p>Short films and music videos from script to grade. Directed and assistant-directed sets,
+              so the storytelling holds from the first frame to the last.</p>
+          </article>
+          <article class="service reveal" style="--i:2">
+            <span class="service__no mono">S·03</span>
+            <h3>Documentaries</h3>
+            <p>Long-form, human stories — the Siachen soldiers, Delhi's bird hospital, Ladakh's moon village.
+              Research, field production and the patient edit they deserve.</p>
+          </article>
+          <article class="service reveal" style="--i:3">
+            <span class="service__no mono">S·04</span>
+            <h3>Creator content &amp; shorts</h3>
+            <p>High-velocity editing and production coordination for YouTube channels — long-form episodes,
+              shorts and reels that keep the algorithm and the audience happy.</p>
+          </article>
+          <article class="service reveal" style="--i:4">
+            <span class="service__no mono">S·05</span>
+            <h3>Graphic design</h3>
+            <p>Thumbnails, posters, brand identities and social creatives — a YMCA-trained designer's eye,
+              from the same hands that cut the film.</p>
+          </article>
+          <article class="service reveal" style="--i:5">
+            <span class="service__no mono">S·06</span>
+            <h3>Production coordination</h3>
+            <p>Call sheets, crews, timelines and delivery. I've coordinated production for digital media's
+              busiest brands — your shoot runs on schedule.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FEATURED WORK ================= -->
+  <section class="section" id="work">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">03 · NOW SHOWING</span>
+        <h2 class="sec__title">Featured Work</h2>
+        <p class="sec__note">A selection from the reel — directed films, long-form episodes and shorts. Tap a card to watch.</p>
+      </header>
+
+      <div class="worktabs mono reveal" role="tablist" aria-label="Work categories">
+        <button class="worktab active" data-filter="all" role="tab" aria-selected="true">ALL</button>
+        <button class="worktab" data-filter="directed" role="tab" aria-selected="false">DIRECTED</button>
+        <button class="worktab" data-filter="long" role="tab" aria-selected="false">LONG FORM</button>
+        <button class="worktab" data-filter="short" role="tab" aria-selected="false">SHORT FORM</button>
+      </div>
+
+      <div class="works" id="works">
+        <article class="workcard reveal" data-cat="directed" style="--i:0">
+          <button class="workcard__open" data-yt="ZlQkWF71Prw" type="button" aria-label="Play: Meet The Makers — The Kambli Family">
+            <img src="assets/img/work/kambli.jpg" alt="Sculptor's workshop — Meet The Makers: the Kambli family" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">10:28</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">DIRECTED · CURLY TALES</span>
+            <h3>Meet The Makers — The Kambli Family Crafting Lalbaugcha Raja Since 92 Years</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="directed" style="--i:1">
+          <button class="workcard__open" data-yt="UX0vjtRcGG8" type="button" aria-label="Play: Soldier's Life at Siachen Glacier">
+            <img src="assets/img/work/siachen.jpg" alt="Soldiers on the Siachen glacier" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">17:04</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">DIRECTED · CURLY TALES</span>
+            <h3>I Experienced Soldier's Life At SIACHEN Glacier 🥶</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="directed" style="--i:2">
+          <button class="workcard__open" data-href="https://www.youtube.com/@kk.create.original/videos" type="button" aria-label="Watch KK Create brand film on YouTube">
+            <img src="assets/img/work/kkcreate.jpg" alt="KK Create brand film still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">0:31</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">DIRECTED · KK CREATES</span>
+            <h3>KK Create — brand film</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="long" style="--i:3">
+          <button class="workcard__open" data-yt="m4tswsr7Syo" type="button" aria-label="Play: India's first bird hospital documentary">
+            <img src="assets/img/work/birdhospital.jpg" alt="Hands holding a rescued bird — Delhi bird hospital documentary" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">20:59</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">LONG FORM · DOCUMENTARY</span>
+            <h3>I Will Fly — पंखों की दुनिया · India's First Bird Hospital, Delhi</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="long" style="--i:4">
+          <button class="workcard__open" data-yt="qEnku8TF_gc" type="button" aria-label="Play: World's only village similar to the Moon">
+            <img src="assets/img/work/moonvillage.jpg" alt="Lunar landscape of Ladakh" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">15:16</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">LONG FORM · CURLY TALES</span>
+            <h3>Inside World's Only Village Similar To The Moon · Shiv Thakare · Ladakh</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="long" style="--i:5">
+          <button class="workcard__open" data-yt="iHU6wDV0XTg" type="button" aria-label="Play: Sunday Brunch episode 179">
+            <img src="assets/img/work/sanjubaba.jpg" alt="Sunday Brunch episode still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">EP 179</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">LONG FORM · CURLY TALES</span>
+            <h3>Sanju Baba's Favorite Chilli Chicken, Paya Soup &amp; AI Battle · Sunday Brunch</h3>
+          </div>
+        </article>
+
+        <article class="workcard reveal" data-cat="long" style="--i:6">
+          <button class="workcard__open" data-yt="HxiH1RC_Ekc" type="button" aria-label="Play: Bingo challenge at Singapore Changi Airport">
+            <img src="assets/img/work/bingo.jpg" alt="Singapore Changi airport at night" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">CHANGI</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">LONG FORM · CURLY TALES</span>
+            <h3>Bingo Challenge At Singapore Changi Airport!</h3>
+          </div>
+        </article>
+
+        <article class="workcard workcard--tall reveal" data-cat="short" style="--i:7">
+          <button class="workcard__open" data-href="https://www.youtube.com/@kk.create.original/videos" type="button" aria-label="Watch Prapt hi paryapt hai on KK Creates">
+            <img src="assets/img/work/prapt.jpg" alt="Street portrait — Prapt hi paryapt hai" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">1:02</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">SHORT · KK CREATES</span>
+            <h3>Prapt hi paryapt hai 🧿</h3>
+          </div>
+        </article>
+
+        <article class="workcard workcard--tall reveal" data-cat="short" style="--i:8">
+          <button class="workcard__open" data-href="https://www.youtube.com/@OkTested/shorts" type="button" aria-label="Watch McDonald's Korean menu review on Ok Tested">
+            <img src="assets/img/work/mcdonalds.jpg" alt="McDonald's Korean menu review still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">1:51</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">SHORT · OK TESTED</span>
+            <h3>McDonald's Korean menu review 🍟</h3>
+          </div>
+        </article>
+
+        <article class="workcard workcard--tall reveal" data-cat="short" style="--i:9">
+          <button class="workcard__open" data-href="https://www.youtube.com/@OkTested/shorts" type="button" aria-label="Watch free makeup challenge on Ok Tested">
+            <img src="assets/img/work/makeup.jpg" alt="Free makeup challenge still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">1:43</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">SHORT · OK TESTED</span>
+            <h3>Free makeup challenge! 💅</h3>
+          </div>
+        </article>
+
+        <article class="workcard workcard--tall reveal" data-cat="short" style="--i:10">
+          <button class="workcard__open" data-href="https://www.youtube.com/@OkTested/shorts" type="button" aria-label="Watch parcel prank short on Ok Tested">
+            <img src="assets/img/work/parcel.jpg" alt="Can I parcel myself in a box — prank still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">📦</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">SHORT · OK TESTED</span>
+            <h3>Can I parcel myself in a box?</h3>
+          </div>
+        </article>
+
+        <article class="workcard workcard--tall reveal" data-cat="short" style="--i:11">
+          <button class="workcard__open" data-href="https://www.instagram.com/iabhivashisth" type="button" aria-label="See more reels on Instagram">
+            <img src="assets/img/work/reel7.jpg" alt="Reel sample still" loading="lazy">
+            <span class="workcard__play" aria-hidden="true">▶</span>
+            <span class="workcard__dur mono" aria-hidden="true">REEL</span>
+          </button>
+          <div class="workcard__meta">
+            <span class="workcard__tag mono">SHORT · REELS</span>
+            <h3>Reels &amp; vertical edits — more on Instagram</h3>
+          </div>
+        </article>
+      </div>
+
+      <p class="works__more reveal">Full portfolio lives on
+        <a href="https://www.youtube.com/@abhishekvashisthfilm" target="_blank" rel="noopener">YouTube ↗</a> and
+        <a href="https://www.instagram.com/iabhivashisth" target="_blank" rel="noopener">Instagram ↗</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= EXPERIENCE ================= -->
+  <section class="section" id="experience">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">04 · CALL SHEET</span>
+        <h2 class="sec__title">Experience</h2>
+      </header>
+
+      <ol class="route" role="list" id="route">
+        <span class="route__cam" id="routeCam" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </span>
+
+        <li class="leg reveal" style="--i:0">
+          <span class="leg__node leg__node--now" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Associate — Video Editor <span class="leg__lvl mono">L3 · MARKETING</span></h3>
+              <span class="leg__when mono">SEP 2025 — PRESENT</span>
+            </div>
+            <p class="leg__org">Mentor Match Pvt. Ltd. · Chennai (remote)</p>
+            <ul class="leg__points">
+              <li>Manage Google and Facebook advertising campaigns focused on lead generation</li>
+              <li>Edit marketing video content supporting advertising and outreach</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="leg reveal" style="--i:1">
+          <span class="leg__node leg__node--now" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Freelance Video Editor &amp; Production Coordinator</h3>
+              <span class="leg__when mono">SEP 2025 — PRESENT</span>
+            </div>
+            <p class="leg__org">Curly Tales &amp; KK Creates</p>
+            <ul class="leg__points">
+              <li>Cutting long-form episodes and shorts for <a href="https://www.youtube.com/@curlytalesdigital/videos" target="_blank" rel="noopener">Curly Tales</a> — food, travel and celebrity formats</li>
+              <li>Editing and production coordination for <a href="https://www.youtube.com/@kk.create.original/videos" target="_blank" rel="noopener">KK Creates</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="leg reveal" style="--i:2">
+          <span class="leg__node" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Senior Video Editor &amp; Production Coordinator</h3>
+              <span class="leg__when mono">OCT 2024 — SEP 2025</span>
+            </div>
+            <p class="leg__org">WLDD Private Limited</p>
+            <ul class="leg__points">
+              <li>Coordinated video editing and production for digital media clients including <strong>Scoopwhoop</strong> and <strong>Ok Tested</strong></li>
+              <li>Owned edit pipelines across simultaneous channel schedules — shorts, sketches and series</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="leg reveal" style="--i:3">
+          <span class="leg__node" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Film Maker &amp; Video Editor</h3>
+              <span class="leg__when mono">JUN 2023 — SEP 2024</span>
+            </div>
+            <p class="leg__org">Head Field Films</p>
+            <ul class="leg__points">
+              <li>Assistant-directed short films with the production team</li>
+              <li>Edited video content for US-based clients</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="leg reveal" style="--i:4">
+          <span class="leg__node" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Junior Graphic Designer</h3>
+              <span class="leg__when mono">SEP 2021 — MAR 2022</span>
+            </div>
+            <p class="leg__org">OTB Strategy Pvt. Ltd.</p>
+            <ul class="leg__points">
+              <li>Produced graphic design assets for client and marketing projects</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="leg reveal" style="--i:5">
+          <span class="leg__node leg__node--origin" aria-hidden="true"></span>
+          <div class="leg__card">
+            <div class="leg__top">
+              <h3>Founder — Freelance Film Maker &amp; Video Editor</h3>
+              <span class="leg__when mono">APR 2020 — PRESENT</span>
+            </div>
+            <p class="leg__org">Awara Films</p>
+            <ul class="leg__points">
+              <li>Independent filmmaking and editing practice, run alongside full-time roles — advertisements, fiction, music videos and documentaries</li>
+            </ul>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================= CLIENTS / LEGENDS ================= -->
+  <section class="section" id="clients">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">05 · PREMIERE NIGHT</span>
+        <h2 class="sec__title">Legends I've Worked With</h2>
+        <p class="sec__note">Humble brag — creators and brands who've trusted me with their stories.</p>
+      </header>
+
+      <div class="legends">
+        <a class="legend reveal" style="--i:0" href="https://www.youtube.com/@TheSanjeevKaushik/videos" target="_blank" rel="noopener">
+          <img src="assets/img/people/sanjeev.jpg" alt="" loading="lazy"><span>Sanjeev Kaushik</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:1" href="https://www.youtube.com/@codespace/shorts" target="_blank" rel="noopener">
+          <img src="assets/img/people/codespace.jpg" alt="" loading="lazy"><span>CodeSpace</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:2" href="https://www.youtube.com/@hdfcskylearn/shorts" target="_blank" rel="noopener">
+          <img src="assets/img/people/hdfcsky.jpg" alt="" loading="lazy"><span>HDFC SKY</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:3" href="https://www.youtube.com/channel/UCFvERz4h4nRKlHRlLPU81FA" target="_blank" rel="noopener">
+          <img src="assets/img/people/mattyice.jpg" alt="" loading="lazy"><span>Matty Ice</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:4" href="https://www.youtube.com/@glamluxemama" target="_blank" rel="noopener">
+          <img src="assets/img/people/glamluxemama.jpg" alt="" loading="lazy"><span>Candace · Glamluxemama</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:5" href="https://www.youtube.com/@Nomads.Nation" target="_blank" rel="noopener">
+          <img src="assets/img/people/nomadsnation.jpg" alt="" loading="lazy"><span>Aaron · Nomads Nation</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:6" href="https://www.youtube.com/@meemansak" target="_blank" rel="noopener">
+          <img src="assets/img/people/meemansak.jpg" alt="" loading="lazy"><span>Meemansak Bharti</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:7" href="https://www.youtube.com/@SundayLabs" target="_blank" rel="noopener">
+          <img src="assets/img/people/sundaylabs.jpg" alt="" loading="lazy"><span>Sunday Labs</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <a class="legend reveal" style="--i:8" href="https://www.youtube.com/@Clovia/videos" target="_blank" rel="noopener">
+          <img src="assets/img/people/clovia.jpg" alt="" loading="lazy"><span>Clovia</span><b class="mono">YOUTUBE ↗</b>
+        </a>
+        <span class="legend reveal" style="--i:9">
+          <img src="assets/img/people/gearforthegirls.jpg" alt="" loading="lazy"><span>Gear for the Girls</span><b class="mono">CLIENT</b>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SKILLS / EDIT BAY ================= -->
+  <section class="section" id="skills">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">06 · THE EDIT BAY</span>
+        <h2 class="sec__title">Skills</h2>
+        <p class="sec__note">The timeline never lies. Tools on the tracks, craft in the cut.</p>
+      </header>
+
+      <!-- NLE timeline -->
+      <div class="nle reveal reveal--flip" aria-label="Editing tools, styled as an editing timeline">
+        <div class="nle__ruler mono" aria-hidden="true">
+          <span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span><span>00:50</span>
+        </div>
+        <div class="nle__track"><span class="nle__lbl mono">V1</span>
+          <span class="nle__clip nle__clip--v" style="--x:0;--w:34"><img src="assets/img/tools/premiere.png" alt="">Premiere Pro</span>
+          <span class="nle__clip nle__clip--v" style="--x:36;--w:30"><img src="assets/img/tools/davinci.png" alt="">DaVinci Resolve</span>
+          <span class="nle__clip nle__clip--v" style="--x:68;--w:26"><img src="assets/img/tools/aftereffects.png" alt="">After Effects</span>
+        </div>
+        <div class="nle__track"><span class="nle__lbl mono">V2</span>
+          <span class="nle__clip nle__clip--g" style="--x:8;--w:28"><img src="assets/img/tools/photoshop.png" alt="">Photoshop</span>
+          <span class="nle__clip nle__clip--g" style="--x:38;--w:26"><img src="assets/img/tools/illustrator.png" alt="">Illustrator</span>
+          <span class="nle__clip nle__clip--g" style="--x:66;--w:20"><img src="assets/img/tools/lightroom.png" alt="">Lightroom</span>
+        </div>
+        <div class="nle__track"><span class="nle__lbl mono">A1</span>
+          <span class="nle__clip nle__clip--a" style="--x:0;--w:44">Sound sync &amp; mix</span>
+          <span class="nle__clip nle__clip--a" style="--x:46;--w:48">Music &amp; SFX selection</span>
+        </div>
+        <div class="nle__playhead" id="nlePlayhead" aria-hidden="true"></div>
+      </div>
+
+      <div class="panels">
+        <div class="panel reveal" style="--i:0">
+          <h3 class="panel__name mono">POST-PRODUCTION</h3>
+          <ul class="chips" role="list"><li data-icon="cut">Narrative editing</li><li data-icon="wave">Sound design</li><li data-icon="palette">Colour grading</li><li data-icon="motion">Motion graphics</li><li data-icon="captions">Subtitles &amp; captions</li></ul>
+        </div>
+        <div class="panel reveal" style="--i:1">
+          <h3 class="panel__name mono">PRODUCTION</h3>
+          <ul class="chips" role="list"><li data-icon="clap">Direction</li><li data-icon="cam">Camera operation</li><li data-icon="sheet">Call sheets &amp; scheduling</li><li data-icon="users">Crew coordination</li></ul>
+        </div>
+        <div class="panel reveal" style="--i:2">
+          <h3 class="panel__name mono">DESIGN</h3>
+          <ul class="chips" role="list"><li data-icon="thumb">Thumbnails</li><li data-icon="poster">Posters &amp; key art</li><li data-icon="brand">Brand identity</li><li data-icon="canva">Canva</li></ul>
+        </div>
+        <div class="panel reveal" style="--i:3">
+          <h3 class="panel__name mono">GROWTH</h3>
+          <ul class="chips" role="list"><li data-icon="ads">Google Ads</li><li data-icon="meta">Meta campaigns</li><li data-icon="lead">Lead generation</li><li data-icon="yt">YouTube packaging</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GRAPHIC PORTFOLIO ================= -->
+  <section class="section" id="graphics">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">07 · KEY ART</span>
+        <h2 class="sec__title">Graphic Portfolio</h2>
+        <p class="sec__note">Posters, thumbnails and brand work — design from the same hands that cut the film.</p>
+      </header>
+    </div>
+    <div class="artstrip reveal" id="artstrip" aria-label="Graphic design portfolio — scrolling strip">
+      <div class="artstrip__track">
+        <img src="assets/img/graphics/g01.jpg" alt="Brand collateral design" loading="lazy">
+        <img src="assets/img/graphics/g02.jpg" alt="Stationery and logo mockup" loading="lazy">
+        <img src="assets/img/graphics/g05.jpg" alt="Restaurant sale flyer" loading="lazy">
+        <img src="assets/img/graphics/g06.jpg" alt="YouTube thumbnail set" loading="lazy">
+        <img src="assets/img/graphics/g03.jpg" alt="Logo presentation" loading="lazy">
+        <img src="assets/img/graphics/g08.jpg" alt="Poster collection" loading="lazy">
+        <img src="assets/img/graphics/g09.jpg" alt="Thumbnail collection" loading="lazy">
+        <img src="assets/img/graphics/g04.jpg" alt="Business card design" loading="lazy">
+        <img src="assets/img/graphics/g10.jpg" alt="Brand cards mockup" loading="lazy">
+        <img src="assets/img/graphics/g11.jpg" alt="Thumbnail designs" loading="lazy">
+        <img src="assets/img/graphics/g12.jpg" alt="Corporate branding" loading="lazy">
+        <img src="assets/img/graphics/g13.jpg" alt="Flyer designs" loading="lazy">
+        <img src="assets/img/graphics/g07.jpg" alt="Logo mockup on paper" loading="lazy">
+        <img src="assets/img/graphics/g14.jpg" alt="Business card mockups" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STILLS GALLERY ================= -->
+  <section class="section" id="gallery">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">08 · STILLS</span>
+        <h2 class="sec__title">Gallery</h2>
+        <p class="sec__note">Frames I've shot along the way.</p>
+      </header>
+
+      <div class="stills">
+        <figure class="still reveal" style="--i:0"><img src="assets/img/gallery/p01.jpg" alt="Poster still — Shoja" loading="lazy"></figure>
+        <figure class="still reveal" style="--i:1"><img src="assets/img/gallery/p02.jpg" alt="Silhouette at sunset" loading="lazy"></figure>
+        <figure class="still reveal" style="--i:2"><img src="assets/img/gallery/p03.jpg" alt="Neon bar sign, Jibhi" loading="lazy"></figure>
+        <figure class="still reveal" style="--i:3"><img src="assets/img/gallery/p04.jpg" alt="Black and white forest" loading="lazy"></figure>
+        <figure class="still reveal" style="--i:4"><img src="assets/img/gallery/p05.jpg" alt="Mountain dog at sunset" loading="lazy"></figure>
+        <figure class="still reveal" style="--i:5"><img src="assets/img/gallery/p06.jpg" alt="Portrait in purple light" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EDUCATION ================= -->
+  <section class="section" id="education">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">09 · FILM SCHOOL</span>
+        <h2 class="sec__title">Education</h2>
+      </header>
+
+      <div class="passes">
+        <article class="pass reveal reveal--flip" style="--i:0">
+          <div class="pass__main">
+            <span class="pass__label mono">DIPLOMA · DESIGN</span>
+            <h3>Graphic Designing Diploma</h3>
+            <p class="pass__school">Young Men's Christian Association (YMCA)</p>
+            <div class="pass__meta mono">
+              <span>REEL<b>GD</b></span>
+              <span>ROLL IN<b>JAN 2021</b></span>
+              <span>WRAP<b>OCT 2021</b></span>
+              <span>SEAT<b>1A</b></span>
+            </div>
+          </div>
+          <div class="pass__stub mono" aria-hidden="true">
+            <span class="pass__code">AV·YMCA</span>
+            <span class="pass__barcode"></span>
+          </div>
+        </article>
+
+        <article class="pass reveal reveal--flip" style="--i:1">
+          <div class="pass__main">
+            <span class="pass__label mono">DEGREE · UNDERGRADUATE</span>
+            <h3>Bachelor of Computer Applications</h3>
+            <p class="pass__school">BCA · 2017 — 2021</p>
+            <div class="pass__meta mono">
+              <span>REEL<b>BCA</b></span>
+              <span>ROLL IN<b>2017</b></span>
+              <span>WRAP<b>2021</b></span>
+              <span>SEAT<b>2A</b></span>
+            </div>
+          </div>
+          <div class="pass__stub mono" aria-hidden="true">
+            <span class="pass__code">AV·BCA</span>
+            <span class="pass__barcode"></span>
+          </div>
+        </article>
+
+        <article class="pass reveal reveal--flip" style="--i:2">
+          <div class="pass__main">
+            <span class="pass__label mono">SCHOOL</span>
+            <h3>Secondary Education</h3>
+            <p class="pass__school">Little Flowers Public Sr. Secondary School</p>
+            <div class="pass__meta mono">
+              <span>REEL<b>XII</b></span>
+              <span>LOC<b>DELHI</b></span>
+              <span>SEAT<b>3A</b></span>
+            </div>
+          </div>
+          <div class="pass__stub mono" aria-hidden="true">
+            <span class="pass__code">AV·XII</span>
+            <span class="pass__barcode"></span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONTACT ================= -->
+  <section class="section section--contact" id="contact">
+    <div class="wrap">
+      <header class="sec__head reveal">
+        <span class="sec__tag mono">10 · THAT'S A WRAP</span>
+        <h2 class="sec__title">Contact</h2>
+      </header>
+
+      <div class="contact reveal">
+        <div class="leader" aria-hidden="true"><canvas id="leaderCanvas"></canvas></div>
+        <p class="contact__lede">Have a story that needs telling — an ad, a film, a channel that needs a
+          sharper cut? Let's work together to create something truly remarkable.</p>
+        <a class="contact__mail" href="mailto:abhiwork.704@gmail.com">abhiwork.704@gmail.com</a>
+        <div class="contact__links">
+          <a class="btn btn--amber" href="mailto:abhiwork.704@gmail.com">Say hello</a>
+          <a class="btn btn--ghost" href="tel:+917011608755">+91 70116 08755</a>
+          <a class="btn btn--ghost" href="https://www.linkedin.com/in/abhishek-vashisth-a51b832a7/" target="_blank" rel="noopener">LinkedIn ↗</a>
+          <a class="btn btn--ghost" href="https://www.youtube.com/@abhishekvashisthfilm" target="_blank" rel="noopener">YouTube ↗</a>
+          <a class="btn btn--ghost" href="https://www.instagram.com/iabhivashisth" target="_blank" rel="noopener">Instagram ↗</a>
+        </div>
+        <p class="contact__loc mono">NEW DELHI, IN · AWARA FILMS · EST. 2020</p>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner mono">
+      <span>© 2026 ABHISHEK VASHISTH · AWARA FILMS</span>
+      <span>FADE OUT.</span>
+    </div>
+  </footer>
+
+  <!-- video lightbox -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lightbox__close mono" id="lightboxClose" aria-label="Close video">CUT ✕</button>
+    <div class="lightbox__frame" id="lightboxFrame"></div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+  </script>
+  <script type="module" src="assets/js/scene.js"></script>
+  <script type="module" src="assets/js/widgets.js"></script>
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
