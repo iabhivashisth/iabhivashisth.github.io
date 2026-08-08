@@ -468,9 +468,36 @@ let clapArm;
   scene.add(corner);
 }
 
+/* an anamorphic streak — the cheap lens-flare that sells cinema glass */
+function streakTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 24;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 256, 0);
+  grad.addColorStop(0, 'rgba(150,190,255,0)');
+  grad.addColorStop(0.42, 'rgba(200,220,255,0.5)');
+  grad.addColorStop(0.5, 'rgba(255,250,240,1)');
+  grad.addColorStop(0.58, 'rgba(200,220,255,0.5)');
+  grad.addColorStop(1, 'rgba(150,190,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 8, 256, 8);
+  g.filter = 'blur(3px)';
+  g.fillRect(0, 4, 256, 16);
+  return new THREE.CanvasTexture(c);
+}
+const STREAK = streakTexture();
+function streak(scaleX) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: STREAK, transparent: true, opacity: 0,
+    depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  s.scale.set(scaleX, scaleX * 0.09, 1);
+  return s;
+}
+
 /* ------------------------------------------------ the neon banner
    AWARA FILMS in flickering neon on scaffold — the business vantage. */
-let neonMat, neonLight;
+let neonMat, neonLight, neonStreak;
 {
   const g = new THREE.Group();
 
@@ -520,6 +547,10 @@ let neonMat, neonLight;
   neonLight = new THREE.PointLight(COL.amber, 42, 40, 1.9);
   neonLight.position.set(0, 9, 2.5);
   g.add(neonLight);
+
+  neonStreak = streak(16);
+  neonStreak.position.set(0, 9, 0.6);
+  g.add(neonStreak);
 
   g.position.set(26, 3.2, -16);
   g.rotation.y = -0.42;
@@ -658,9 +689,13 @@ const searchlights = [];
     const hot = sprite(0xffffff, 2.4);
     hot.position.y = 1.6;
     g.add(hot);
+    const flare = streak(9);
+    flare.position.y = 1.7;
+    g.add(flare);
     g.position.set(x, 0, z);
     g.userData.phase = phase;
     g.userData.beam = beam;
+    g.userData.flare = flare;
     scene.add(g);
     searchlights.push(g);
   }
@@ -1030,6 +1065,12 @@ let stageIdx = -1;
 
 /* ACTION! — both searchlights swing onto the screen for a few seconds */
 let actionT = 0;
+/* premiere criss-cross when the Legends wall scrolls in */
+let sweepT = 0;
+/* the wrap slate claps when someone reaches out */
+let wrapClapT = 0;
+/* department gel — service cards tint the banner light */
+const gelTarget = new THREE.Color(COL.amber);
 
 /* hooks for the DOM layer */
 let hlIndex = -1;
@@ -1037,6 +1078,9 @@ window.__lot = {
   setGrade(v) { gradeV = clamp01(v); applyLook(); },
   highlightFrame(i) { hlIndex = i; },
   action() { actionT = 5.2; },
+  sweep() { if (actionT <= 0) sweepT = 2.8; },
+  wrapClap() { wrapClapT = 0.62; },
+  gel(hex) { gelTarget.set(hex || COL.amber); },
 };
 
 /* draggable projector reel — grab it in the hero to scrub the showreel */
@@ -1117,7 +1161,10 @@ function stageCamera() {
   while (i < stages.length - 1 && scrollY >= stages[i + 1].y) i++;
   // crossing into a new scene closes the iris for a beat
   if (i !== stageIdx) {
-    if (stageIdx !== -1 && !REDUCED && irisT >= IRIS_DUR) irisT = 0;
+    if (stageIdx !== -1 && !REDUCED && irisT >= IRIS_DUR) {
+      irisT = 0;
+      if (window.__sfx) window.__sfx.tick();
+    }
     stageIdx = i;
   }
   const a = stages[i];
@@ -1228,21 +1275,51 @@ function tick() {
   // rack reels idle over the call sheet
   for (const r of rackReels) r.rotation.z += dt * r.userData.speed * (1 + scrollVel * 0.08);
 
-  // searchlights sweep — unless ACTION! has them trained on the screen
+  // searchlights: ACTION! > premiere criss-cross > idle sweep
   if (actionT > 0) actionT -= dt;
+  if (sweepT > 0) sweepT -= dt;
   for (const s of searchlights) {
+    let opTarget;
     if (actionT > 0) {
       _sdir.set(SCREEN_POS.x - s.position.x, 11, SCREEN_POS.z - s.position.z).normalize();
       _squat.setFromUnitVectors(_sup, _sdir);
-      s.quaternion.slerp(_squat, Math.min(1, dt * 4));
-      s.userData.beam.material.opacity += (0.3 - s.userData.beam.material.opacity) * Math.min(1, dt * 3);
+      opTarget = 0.3;
+    } else if (sweepT > 0) {
+      // fast opposing criss-cross, like a premiere carpet
+      const k = (2.8 - sweepT) * 3.4;
+      _seul.set(
+        Math.cos(k + s.userData.phase * 2) * 0.5,
+        0,
+        Math.sin(k) * (s.userData.phase > 1 ? -0.85 : 0.85)
+      );
+      _squat.setFromEuler(_seul);
+      opTarget = 0.22;
     } else {
       _seul.set(Math.cos(t * 0.33 + s.userData.phase) * 0.35, 0, Math.sin(t * 0.4 + s.userData.phase) * 0.5);
       _squat.setFromEuler(_seul);
-      s.quaternion.slerp(_squat, Math.min(1, dt * 3));
-      const target = 0.085 + Math.sin(t * 0.9 + s.userData.phase) * 0.03;
-      s.userData.beam.material.opacity += (target - s.userData.beam.material.opacity) * Math.min(1, dt * 3);
+      opTarget = 0.085 + Math.sin(t * 0.9 + s.userData.phase) * 0.03;
     }
+    s.quaternion.slerp(_squat, Math.min(1, dt * (actionT > 0 ? 4 : 3)));
+    s.userData.beam.material.opacity += (opTarget - s.userData.beam.material.opacity) * Math.min(1, dt * 3);
+    // flare rides the beam intensity
+    s.userData.flare.material.opacity = s.userData.beam.material.opacity * 1.6;
+  }
+
+  // wrap slate claps when someone reaches out from the contact section
+  if (wrapClapT > 0) {
+    wrapClapT -= dt;
+    const k = clamp01(1 - wrapClapT / 0.62);
+    clapArm.rotation.z = 0.02 + (k < 0.55
+      ? 0.5 * easeOutCubic(k / 0.55)
+      : 0.5 * (1 - easeInOutCubic((k - 0.55) / 0.45)));
+  }
+
+  // department gel tints the banner light
+  neonLight.color.lerp(gelTarget, Math.min(1, dt * 3.5));
+
+  // neon flare breathes with the sign
+  if (neonStreak) {
+    neonStreak.material.opacity = (neonMat.opacity > 0.9 ? 0.34 : 0.1) + Math.sin(t * 1.3) * 0.05;
   }
 
   // playhead scrubs the edit bay, loops like a preview render

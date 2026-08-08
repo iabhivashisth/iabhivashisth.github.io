@@ -175,18 +175,86 @@
   var route = document.getElementById('route');
   var routeCam = document.getElementById('routeCam');
   if (route && routeCam) {
+    var routeYear = document.getElementById('routeYear');
     var nodes = route.querySelectorAll('.leg__node');
     var routeTick = function () {
       var r = route.getBoundingClientRect();
       var focus = innerHeight * 0.45;
       var p = Math.min(1, Math.max(0, (focus - r.top) / r.height));
       routeCam.style.top = (p * 100).toFixed(2) + '%';
+      // the call sheet runs newest → oldest, 2025 at the top, 2020 at the wrap
+      if (routeYear) routeYear.textContent = String(Math.round(2025.4 - p * 5.4));
       nodes.forEach(function (n) {
         n.classList.toggle('passed', n.getBoundingClientRect().top < focus);
       });
     };
     addEventListener('scroll', routeTick, { passive: true });
     routeTick();
+  }
+
+  /* ---------------------------------------------- edit-bay render pass
+     The playhead runs the timeline on a loop and "renders in" each clip as
+     it passes; grab it (or scrub anywhere on the panel) to drive it. */
+  var nle = document.querySelector('.nle');
+  var nlePlayhead = document.getElementById('nlePlayhead');
+  var nleDone = document.getElementById('nleDone');
+  if (nle && nlePlayhead && !REDUCED) {
+    var nleClips = Array.prototype.map.call(document.querySelectorAll('.nle__clip'), function (c) {
+      return { el: c, x: parseFloat(c.style.getPropertyValue('--x')) || 0 };
+    });
+    var nleP = 0;          // 0..100 along the timeline
+    var nleDrag = false;
+    var nleLive = false;
+    var doneShown = false;
+    var nleLast = performance.now();
+
+    var nleFrame = function (now) {
+      var dt = Math.min((now - nleLast) / 1000, 0.05);
+      nleLast = now;
+      if (!nleDrag) nleP += dt * (100 / 9);          // full pass ≈ 9s
+      if (nleP >= 100) {
+        if (!doneShown) {
+          doneShown = true;
+          nleDone.classList.add('show');
+          if (window.__sfx) window.__sfx.tick();
+          setTimeout(function () { nleDone.classList.remove('show'); }, 1800);
+        }
+        if (nleP >= 100 + 22) { nleP = 0; doneShown = false; }  // hold, then loop
+        else nleP += dt * (100 / 9);
+      }
+      var shown = Math.min(nleP, 100);
+      nlePlayhead.style.left = 'calc(46px + (100% - 64px) * ' + (shown / 100).toFixed(4) + ')';
+      nleClips.forEach(function (c) { c.el.classList.toggle('lit', c.x <= shown); });
+      if (nleLive) requestAnimationFrame(nleFrame);
+    };
+
+    var nleScrub = function (e) {
+      var r = nle.getBoundingClientRect();
+      nleP = Math.min(100, Math.max(0, ((e.clientX - r.left - 46) / (r.width - 64)) * 100));
+      doneShown = nleP >= 100;
+    };
+    nle.addEventListener('pointerdown', function (e) {
+      nleDrag = true;
+      nle.setPointerCapture(e.pointerId);
+      nleScrub(e);
+    });
+    nle.addEventListener('pointermove', function (e) { if (nleDrag) nleScrub(e); });
+    nle.addEventListener('pointerup', function () { nleDrag = false; });
+
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && !nleLive) {
+          nleLive = true;
+          nleLast = performance.now();
+          requestAnimationFrame(nleFrame);
+        } else if (!en.isIntersecting) {
+          nleLive = false;
+        }
+      });
+    }, { rootMargin: '60px' }).observe(nle);
+  } else if (nle) {
+    // reduced motion: everything rendered, no moving playhead
+    document.querySelectorAll('.nle__clip').forEach(function (c) { c.classList.add('lit'); });
   }
 
   /* ---------------------------------------------- work filter */
@@ -285,6 +353,175 @@
     });
   }
 
+  /* ---------------------------------------------- storyboard cards
+     Touch has no hover — tap flips; hovering also swings the department gel
+     onto the banner light in the lot. */
+  var hoverable = matchMedia('(hover: hover)').matches;
+  document.querySelectorAll('.service').forEach(function (card) {
+    if (!hoverable) {
+      card.addEventListener('click', function () { card.classList.toggle('open'); });
+    }
+    card.addEventListener('pointerenter', function () {
+      card.style.setProperty('--gel', card.dataset.gel);
+      if (hoverable && window.__lot) window.__lot.gel(card.dataset.gel);
+    });
+    card.addEventListener('pointerleave', function () {
+      if (hoverable && window.__lot) window.__lot.gel(null);
+    });
+    card.style.setProperty('--gel', card.dataset.gel);
+  });
+
+  /* ---------------------------------------------- premiere sweep
+     The searchlights criss-cross once whenever the Legends wall arrives. */
+  var clientsSec = document.getElementById('clients');
+  if (clientsSec && !REDUCED) {
+    var lastSweep = 0;
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting && Date.now() - lastSweep > 8000) {
+          lastSweep = Date.now();
+          if (window.__lot) window.__lot.sweep();
+        }
+      });
+    }, { threshold: 0.25 }).observe(clientsSec);
+  }
+
+  /* ---------------------------------------------- contact slate clap */
+  var whiteFlash = document.getElementById('whiteFlash');
+  function markIt() {
+    if (window.__lot) window.__lot.wrapClap();
+    if (window.__sfx) window.__sfx.clap();
+    if (whiteFlash && !REDUCED) {
+      whiteFlash.classList.remove('go');
+      void whiteFlash.offsetWidth;
+      whiteFlash.classList.add('go');
+    }
+  }
+  document.querySelectorAll('#contact a[href^="mailto:"]').forEach(function (a) {
+    a.addEventListener('click', markIt);
+  });
+
+  /* ---------------------------------------------- filmbar scene preview
+     Hover the celluloid rail for a look at the scene you'd land on;
+     click to jump there. */
+  var filmbar = document.getElementById('filmbar');
+  var fbPreview = document.getElementById('filmbarPreview');
+  var fbThumb = document.getElementById('filmbarThumb');
+  var fbLabel = document.getElementById('filmbarLabel');
+  if (filmbar && fbPreview && hoverable) {
+    var SCENES = [
+      ['home', 'SC 00 · TITLE', 'assets/img/work/kkcreate.jpg'],
+      ['about', 'SC 01 · COLD OPEN', 'assets/img/work/about-poster.jpg'],
+      ['awara', 'SC 02 · THE BANNER', 'assets/img/graphics/g08.jpg'],
+      ['work', 'SC 03 · NOW SHOWING', 'assets/img/work/kambli.jpg'],
+      ['experience', 'SC 04 · CALL SHEET', 'assets/img/work/siachen.jpg'],
+      ['clients', 'SC 05 · PREMIERE', 'assets/img/people/sanjeev.jpg'],
+      ['skills', 'SC 06 · EDIT BAY', 'assets/img/work/moonvillage.jpg'],
+      ['graphics', 'SC 07 · KEY ART', 'assets/img/graphics/g05.jpg'],
+      ['gallery', 'SC 08 · STILLS', 'assets/img/gallery/p03.jpg'],
+      ['education', 'SC 09 · FILM SCHOOL', 'assets/img/gallery/p04.jpg'],
+      ['contact', 'SC 10 · THE WRAP', 'assets/img/work/birdhospital.jpg'],
+    ];
+    var sceneFor = function (frac) {
+      var target = frac * (document.documentElement.scrollHeight - innerHeight);
+      var pick = SCENES[0];
+      for (var i = 0; i < SCENES.length; i++) {
+        var el = document.getElementById(SCENES[i][0]);
+        if (el && el.offsetTop - innerHeight * 0.45 <= target) pick = SCENES[i];
+      }
+      return pick;
+    };
+    filmbar.addEventListener('pointermove', function (e) {
+      var frac = Math.min(1, Math.max(0, e.clientY / innerHeight));
+      var sc = sceneFor(frac);
+      fbThumb.src = sc[2];
+      fbLabel.textContent = sc[1];
+      fbPreview.style.top = Math.min(innerHeight - 80, Math.max(76, e.clientY)) + 'px';
+      fbPreview.hidden = false;
+    });
+    filmbar.addEventListener('pointerleave', function () { fbPreview.hidden = true; });
+    filmbar.addEventListener('click', function (e) {
+      var frac = Math.min(1, Math.max(0, e.clientY / innerHeight));
+      var sc = sceneFor(frac);
+      document.getElementById(sc[0]).scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' });
+    });
+  }
+
+  /* ---------------------------------------------- sound (opt-in)
+     Everything synthesized with WebAudio — projector hum, a slate clap, a
+     shutter tick on scene changes. Off until the visitor turns it on. */
+  var sndBtn = document.getElementById('sndBtn');
+  if (sndBtn) {
+    var actx = null, humGain = null;
+    function buildAudio() {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      // projector hum: low rumble + a 24fps shutter flutter on its level
+      var master = actx.createGain();
+      master.gain.value = 1;
+      master.connect(actx.destination);
+      humGain = actx.createGain();
+      humGain.gain.value = 0;
+      humGain.connect(master);
+      var rumble = actx.createOscillator();
+      rumble.type = 'sawtooth';
+      rumble.frequency.value = 52;
+      var rumbleLp = actx.createBiquadFilter();
+      rumbleLp.type = 'lowpass';
+      rumbleLp.frequency.value = 130;
+      rumble.connect(rumbleLp).connect(humGain);
+      var flutter = actx.createOscillator();
+      flutter.frequency.value = 24;
+      var flutterGain = actx.createGain();
+      flutterGain.gain.value = 0.008;
+      flutter.connect(flutterGain).connect(humGain.gain);
+      rumble.start();
+      flutter.start();
+
+      sfxApi = {
+        tick: function () {          // camera-shutter blip
+          if (!actx) return;
+          var o = actx.createOscillator();
+          var g = actx.createGain();
+          o.type = 'square';
+          o.frequency.value = 1900;
+          g.gain.setValueAtTime(0.05, actx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.045);
+          o.connect(g).connect(master);
+          o.start();
+          o.stop(actx.currentTime + 0.05);
+        },
+        clap: function () {          // slate crack: a short filtered noise burst
+          if (!actx) return;
+          var len = actx.sampleRate * 0.09;
+          var buf = actx.createBuffer(1, len, actx.sampleRate);
+          var d = buf.getChannelData(0);
+          for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+          var src = actx.createBufferSource();
+          src.buffer = buf;
+          var bp = actx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = 2600;
+          bp.Q.value = 0.8;
+          var g = actx.createGain();
+          g.gain.value = 0.5;
+          src.connect(bp).connect(g).connect(master);
+          src.start();
+        },
+      };
+    }
+    var sndOn = false;
+    var sfxApi = null;
+    sndBtn.addEventListener('click', function () {
+      if (!actx) buildAudio();
+      sndOn = !sndOn;
+      if (actx.state === 'suspended') actx.resume().catch(function () {});
+      humGain.gain.setTargetAtTime(sndOn ? 0.05 : 0, actx.currentTime, 0.4);
+      sndBtn.textContent = sndOn ? '🔊' : '🔇';
+      sndBtn.setAttribute('aria-pressed', String(sndOn));
+      window.__sfx = sndOn ? sfxApi : null;
+    });
+  }
+
   /* ---------------------------------------------- ACTION! easter egg
      Type "action": the searchlights swing onto the screen, the slate flash
      fires, and the showreel rolls. */
@@ -296,6 +533,7 @@
     if (buf !== 'action') return;
     buf = '';
     if (window.__lot) window.__lot.action();
+    if (window.__sfx) window.__sfx.clap();
     if (actionFlash) {
       actionFlash.classList.remove('go');
       void actionFlash.offsetWidth; // restart the animation
