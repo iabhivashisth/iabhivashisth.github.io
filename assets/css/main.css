@@ -1017,6 +1017,99 @@ body.ready .camhud { opacity: 1; transform: none; }
 }
 .camhud__snd:hover { opacity: 1; transform: scale(1.15); }
 
+/* ------------------------------------------------ director's cut tour */
+.tourbars span {
+  position: fixed; left: 0; right: 0; height: 9vh; z-index: 88;
+  background: #000;
+  pointer-events: none;
+  transition: transform 0.9s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.tourbars span:first-child { top: 0; transform: translateY(-100%); }
+.tourbars span:last-child { bottom: 0; transform: translateY(100%); }
+body.touring .tourbars span { transform: none; }
+.tourlabel {
+  position: fixed; left: 50%; bottom: 3vh; z-index: 89;
+  transform: translateX(-50%);
+  font-size: 12px; letter-spacing: 0.3em;
+  color: var(--amber);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+body.touring .nav, body.touring .camhud, body.touring .filmbar, body.touring .dronecam { opacity: 0 !important; pointer-events: none; }
+
+/* ------------------------------------------------ drone monitor frame */
+.dronecam {
+  position: fixed; right: 36px; bottom: 20px; z-index: 56;
+  width: 300px; height: 169px;
+  border: 1px solid rgba(244, 178, 60, 0.5);
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.dronecam__tag {
+  position: absolute; top: 6px; left: 8px;
+  font-size: 9px; letter-spacing: 0.2em;
+  color: var(--ink);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+.dronecam__tag i { color: var(--red); font-style: normal; animation: blink 1.3s steps(2) infinite; }
+.dronecam canvas { width: 100%; height: 100%; display: block; border-radius: 3px; }
+.dronecam::after {
+  /* corner ticks, like a monitor overlay */
+  content: "";
+  position: absolute; inset: 4px;
+  border: 1px solid rgba(242, 237, 227, 0.16);
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------ resolve wheels */
+.camhud__wheels { display: flex; gap: 8px; }
+.wheel {
+  position: relative;
+  width: 26px; height: 26px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(7, 6, 10, 0.9) 0 34%, transparent 36%),
+    conic-gradient(#e84545, #f4b23c, #7cd65a, #46c8b2, #4d7cff, #b07cff, #e84545);
+  border: 1px solid var(--line);
+  cursor: crosshair;
+  touch-action: none;
+}
+.wheel i {
+  position: absolute; left: 50%; top: 50%;
+  width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.wheel b {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px; font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------ sync-the-slate game */
+.slategame { margin: 0 auto 30px; width: 300px; }
+.slategame canvas { display: block; border-radius: 10px; }
+.slategame__cap {
+  margin-top: 8px;
+  font-size: 9px; letter-spacing: 0.24em;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ------------------------------------------------ depth-parallax overlay */
+.parallaxfx {
+  position: absolute; inset: 0; z-index: 0;
+  width: 100% !important; height: 100% !important;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.parallaxfx.on { opacity: 1; }
+
 /* ------------------------------------------------ lightbox */
 .lightbox[hidden] { display: none; }
 .lightbox {
@@ -1078,6 +1171,7 @@ body.ready .camhud { opacity: 1; transform: none; }
   .intro__alt { top: 72px; right: 26px; }
   .camhud { display: none; }
   .filmbar__preview { display: none; }
+  .dronecam { display: none; }
   .leg__stamp { position: static; display: inline-block; margin-top: 10px; transform: rotate(-4deg); }
 }
 

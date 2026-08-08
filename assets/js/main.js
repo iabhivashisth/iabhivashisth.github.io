@@ -404,33 +404,34 @@
   /* ---------------------------------------------- filmbar scene preview
      Hover the celluloid rail for a look at the scene you'd land on;
      click to jump there. */
+  var SCENES = [
+    ['home', 'SC 00 · TITLE', 'assets/img/work/kkcreate.jpg'],
+    ['about', 'SC 01 · COLD OPEN', 'assets/img/work/about-poster.jpg'],
+    ['awara', 'SC 02 · THE BANNER', 'assets/img/graphics/g08.jpg'],
+    ['work', 'SC 03 · NOW SHOWING', 'assets/img/work/kambli.jpg'],
+    ['experience', 'SC 04 · CALL SHEET', 'assets/img/work/siachen.jpg'],
+    ['clients', 'SC 05 · PREMIERE', 'assets/img/people/sanjeev.jpg'],
+    ['skills', 'SC 06 · EDIT BAY', 'assets/img/work/moonvillage.jpg'],
+    ['graphics', 'SC 07 · KEY ART', 'assets/img/graphics/g05.jpg'],
+    ['gallery', 'SC 08 · STILLS', 'assets/img/gallery/p03.jpg'],
+    ['education', 'SC 09 · FILM SCHOOL', 'assets/img/gallery/p04.jpg'],
+    ['contact', 'SC 10 · THE WRAP', 'assets/img/work/birdhospital.jpg'],
+  ];
+  var sceneFor = function (frac) {
+    var target = frac * (document.documentElement.scrollHeight - innerHeight);
+    var pick = SCENES[0];
+    for (var i = 0; i < SCENES.length; i++) {
+      var el = document.getElementById(SCENES[i][0]);
+      if (el && el.offsetTop - innerHeight * 0.45 <= target) pick = SCENES[i];
+    }
+    return pick;
+  };
+
   var filmbar = document.getElementById('filmbar');
   var fbPreview = document.getElementById('filmbarPreview');
   var fbThumb = document.getElementById('filmbarThumb');
   var fbLabel = document.getElementById('filmbarLabel');
   if (filmbar && fbPreview && hoverable) {
-    var SCENES = [
-      ['home', 'SC 00 · TITLE', 'assets/img/work/kkcreate.jpg'],
-      ['about', 'SC 01 · COLD OPEN', 'assets/img/work/about-poster.jpg'],
-      ['awara', 'SC 02 · THE BANNER', 'assets/img/graphics/g08.jpg'],
-      ['work', 'SC 03 · NOW SHOWING', 'assets/img/work/kambli.jpg'],
-      ['experience', 'SC 04 · CALL SHEET', 'assets/img/work/siachen.jpg'],
-      ['clients', 'SC 05 · PREMIERE', 'assets/img/people/sanjeev.jpg'],
-      ['skills', 'SC 06 · EDIT BAY', 'assets/img/work/moonvillage.jpg'],
-      ['graphics', 'SC 07 · KEY ART', 'assets/img/graphics/g05.jpg'],
-      ['gallery', 'SC 08 · STILLS', 'assets/img/gallery/p03.jpg'],
-      ['education', 'SC 09 · FILM SCHOOL', 'assets/img/gallery/p04.jpg'],
-      ['contact', 'SC 10 · THE WRAP', 'assets/img/work/birdhospital.jpg'],
-    ];
-    var sceneFor = function (frac) {
-      var target = frac * (document.documentElement.scrollHeight - innerHeight);
-      var pick = SCENES[0];
-      for (var i = 0; i < SCENES.length; i++) {
-        var el = document.getElementById(SCENES[i][0]);
-        if (el && el.offsetTop - innerHeight * 0.45 <= target) pick = SCENES[i];
-      }
-      return pick;
-    };
     filmbar.addEventListener('pointermove', function (e) {
       var frac = Math.min(1, Math.max(0, e.clientY / innerHeight));
       var sc = sceneFor(frac);
@@ -519,6 +520,146 @@
       sndBtn.textContent = sndOn ? '🔊' : '🔇';
       sndBtn.setAttribute('aria-pressed', String(sndOn));
       window.__sfx = sndOn ? sfxApi : null;
+    });
+  }
+
+  /* ---------------------------------------------- director's cut tour
+     One continuous dolly through every scene: letterbox bars in, the page
+     drives itself, the HUD narrates, any input hands control back. */
+  var tourBtn = document.getElementById('tourBtn');
+  var tourLabel = document.getElementById('tourLabel');
+  var tourOn = false;
+  var tourRaf = 0;
+  function endTour(fin) {
+    if (!tourOn) return;
+    tourOn = false;
+    cancelAnimationFrame(tourRaf);
+    document.body.classList.remove('touring');
+    if (fin && tourLabel) {
+      tourLabel.textContent = 'FIN.';
+      setTimeout(function () { tourLabel.textContent = ''; }, 1600);
+    } else if (tourLabel) {
+      tourLabel.textContent = '';
+    }
+  }
+  function startTour() {
+    if (tourOn) return;
+    tourOn = true;
+    document.body.classList.add('touring');
+    var max = document.documentElement.scrollHeight - innerHeight;
+    var from = scrollY;
+    var total = ((max - from) / max) * SCENES.length * 4600;   // ~4.6s a scene
+    var t0 = performance.now();
+    var lastLabel = '';
+    var frame = function (now) {
+      if (!tourOn) return;
+      var p = Math.min(1, (now - t0) / total);
+      // ease the first and last five percent so the dolly breathes
+      var eased = p < 0.05 ? p * p / 0.05 : p > 0.95 ? 1 - (1 - p) * (1 - p) / 0.05 : p;
+      scrollTo({ top: from + (max - from) * eased, behavior: 'instant' });
+      var sc = sceneFor(scrollY / max);
+      if (sc[1] !== lastLabel) {
+        lastLabel = sc[1];
+        tourLabel.textContent = sc[1];
+      }
+      if (p >= 1) { endTour(true); return; }
+      tourRaf = requestAnimationFrame(frame);
+    };
+    tourRaf = requestAnimationFrame(frame);
+  }
+  if (tourBtn) {
+    tourBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      startTour();
+    });
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) {
+      addEventListener(ev, function (e) {
+        if (tourOn && e.target !== tourBtn) endTour(false);
+      }, { passive: true });
+    });
+  }
+
+  /* ---------------------------------------------- resolve wheels
+     Lift / gamma / gain trackballs — drag inside a wheel to push that range
+     toward a colour, double-click to reset. Drives the grade shader. */
+  var wheelsWrap = document.getElementById('wheels');
+  if (wheelsWrap && window.matchMedia('(hover: hover)').matches) {
+    var wheelVals = { lift: [0, 0], gamma: [0, 0], gain: [0, 0] };
+    function pushWheels() {
+      if (!window.__lot || !window.__lot.fancy) return;
+      var toRgb = function (v, s) {
+        var mag = Math.min(1, Math.hypot(v[0], v[1]));
+        if (mag === 0) return [0, 0, 0];
+        var a = Math.atan2(v[1], v[0]);
+        return [Math.cos(a), Math.cos(a - 2.094), Math.cos(a + 2.094)].map(function (c) { return c * mag * s; });
+      };
+      var lift = toRgb(wheelVals.lift, 0.10);
+      var gainOff = toRgb(wheelVals.gain, 0.28);
+      var gammaOff = toRgb(wheelVals.gamma, 0.4);
+      window.__lot.setWheels(
+        lift,
+        [1 + gammaOff[0], 1 + gammaOff[1], 1 + gammaOff[2]],
+        [1 + gainOff[0], 1 + gainOff[1], 1 + gainOff[2]]
+      );
+    }
+    wheelsWrap.querySelectorAll('.wheel').forEach(function (w) {
+      var name = w.dataset.wheel;
+      var dot = w.querySelector('i');
+      var dragging = false;
+      var setFrom = function (e) {
+        var r = w.getBoundingClientRect();
+        var x = ((e.clientX - r.left) / r.width - 0.5) * 2;
+        var y = ((e.clientY - r.top) / r.height - 0.5) * 2;
+        var mag = Math.hypot(x, y);
+        if (mag > 1) { x /= mag; y /= mag; }
+        wheelVals[name] = [x, -y];        // up = positive
+        dot.style.transform = 'translate(' + (x * 8).toFixed(1) + 'px,' + (y * 8).toFixed(1) + 'px)';
+        pushWheels();
+      };
+      w.addEventListener('pointerdown', function (e) {
+        dragging = true;
+        w.setPointerCapture(e.pointerId);
+        setFrom(e);
+      });
+      w.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
+      w.addEventListener('pointerup', function () { dragging = false; });
+      w.addEventListener('dblclick', function () {
+        wheelVals[name] = [0, 0];
+        dot.style.transform = '';
+        pushWheels();
+      });
+    });
+  }
+
+  /* ---------------------------------------------- golden hour + drone */
+  var dayBtn = document.getElementById('dayBtn');
+  if (dayBtn) {
+    var golden = false;
+    dayBtn.addEventListener('click', function () {
+      golden = !golden;
+      dayBtn.textContent = golden ? '🌅' : '🌙';
+      dayBtn.setAttribute('aria-pressed', String(golden));
+      if (window.__lot) window.__lot.setDay(golden);
+    });
+  }
+  var droneBtn = document.getElementById('droneBtn');
+  var dronecamEl = document.getElementById('dronecam');
+  if (droneBtn && dronecamEl) {
+    var droneOn = !!(window.__lot && window.__lot.fancy);
+    var syncDrone = function () {
+      dronecamEl.hidden = !droneOn;
+      droneBtn.setAttribute('aria-pressed', String(droneOn));
+      droneBtn.style.opacity = droneOn ? '' : '0.4';
+      if (window.__lot) window.__lot.drone(droneOn);
+    };
+    // scene.js loads as a module after this script parses — sync once ready
+    setTimeout(function () {
+      droneOn = !!(window.__lot && window.__lot.fancy);
+      syncDrone();
+    }, 400);
+    droneBtn.addEventListener('click', function () {
+      droneOn = !droneOn && !!(window.__lot && window.__lot.fancy);
+      syncDrone();
     });
   }
 

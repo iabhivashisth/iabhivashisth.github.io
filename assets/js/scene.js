@@ -9,9 +9,16 @@
    of the studio for every section. */
 
 import * as THREE from 'three';
+import { EffectComposer } from '../vendor/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '../vendor/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from '../vendor/jsm/postprocessing/ShaderPass.js';
+import { OutputPass } from '../vendor/jsm/postprocessing/OutputPass.js';
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none)').matches;
+/* the heavy toys — bloom, burn, drone cam — are for big screens with a GPU */
+const FANCY = !TOUCH && !REDUCED && innerWidth >= 980;
 
 const COL = {
   night: 0x07060a,
@@ -42,6 +49,69 @@ const SCREEN_POS = new THREE.Vector3(14, 0, -40);
 const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 700);
 camera.position.copy(HERO_CAM);
 camera.lookAt(HERO_LOOK);
+
+/* ------------------------------------------------ post chain
+   render → bloom (the lights finally burn) → colour grade (the Resolve
+   wheels) → film burn (the big transition) → output. Desktop only. */
+let composer = null, gradePass = null, burnPass = null;
+if (FANCY) {
+  composer = new EffectComposer(renderer);
+  composer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  composer.setSize(innerWidth, innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.38, 0.3, 0.88));
+
+  gradePass = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uLift: { value: new THREE.Vector3(0, 0, 0) },
+      uGamma: { value: new THREE.Vector3(1, 1, 1) },
+      uGain: { value: new THREE.Vector3(1, 1, 1) },
+    },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec3 uLift, uGamma, uGain;
+      varying vec2 vUv;
+      void main() {
+        vec4 t = texture2D(tDiffuse, vUv);
+        vec3 c = t.rgb * uGain + uLift;
+        c = pow(max(c, 0.0), uGamma);
+        gl_FragColor = vec4(c, t.a);
+      }`,
+  });
+  composer.addPass(gradePass);
+
+  burnPass = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uB: { value: 0 },
+      uSeed: { value: 0 },
+    },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform float uB, uSeed;
+      varying vec2 vUv;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p){
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x),
+                   mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+      }
+      void main() {
+        vec4 t = texture2D(tDiffuse, vUv);
+        if (uB <= 0.0) { gl_FragColor = t; return; }
+        float n = noise(vUv * 3.5 + uSeed) * 0.8 + noise(vUv * 11.0 + uSeed) * 0.2;
+        float m = smoothstep(uB - 0.04, uB + 0.05, n);   // 1 intact, 0 consumed
+        vec3 rim = vec3(1.0, 0.45, 0.1) * smoothstep(uB + 0.16, uB, n) * m * 2.4;
+        gl_FragColor = vec4(t.rgb * m + rim, 1.0);
+      }`,
+  });
+  composer.addPass(burnPass);
+  composer.addPass(new OutputPass());
+}
 
 function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -192,7 +262,7 @@ let screenMat, screenVideo;
    the lens to the screen with dust drifting through it. */
 const projector = new THREE.Group();
 const reels = [];
-let beamMat, lensGlow, dustBeam;
+let beamMat, lensGlow, dustBeam, ribbonTex;
 {
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1c1826, roughness: 0.55, metalness: 0.4 });
   const trimMat = new THREE.MeshStandardMaterial({ color: 0x3a3050, roughness: 0.4, metalness: 0.6 });
@@ -235,6 +305,58 @@ let beamMat, lensGlow, dustBeam;
   };
   mkReel(0.9, 1.05);
   mkReel(-0.6, 0.85);
+
+  // the film itself — a celluloid ribbon threading front reel → gate → back
+  // reel, its sprockets forever travelling
+  {
+    const rc = document.createElement('canvas');
+    rc.width = 128; rc.height = 64;
+    const rg2 = rc.getContext('2d');
+    rg2.fillStyle = '#191521';
+    rg2.fillRect(0, 0, 128, 64);
+    rg2.fillStyle = 'rgba(242,237,227,0.5)';
+    for (let x = 4; x < 128; x += 16) {
+      rg2.fillRect(x, 5, 8, 6);
+      rg2.fillRect(x, 53, 8, 6);
+    }
+    rg2.strokeStyle = 'rgba(242,237,227,0.14)';
+    rg2.lineWidth = 2;
+    for (let x = 0; x <= 128; x += 32) {
+      rg2.beginPath(); rg2.moveTo(x, 14); rg2.lineTo(x, 50); rg2.stroke();
+    }
+    ribbonTex = new THREE.CanvasTexture(rc);
+    ribbonTex.wrapS = ribbonTex.wrapT = THREE.RepeatWrapping;
+    ribbonTex.repeat.set(10, 1);
+
+    const path = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 4.0, 0.98),
+      new THREE.Vector3(0, 3.0, 1.9),
+      new THREE.Vector3(0, 1.2, 1.45),
+      new THREE.Vector3(0, 0.68, -0.3),
+      new THREE.Vector3(0, 1.9, -1.5),
+      new THREE.Vector3(0, 3.72, -0.66),
+    ]);
+    const N = 72, W = 0.17;
+    const pos = [], uv = [], idx = [];
+    for (let i = 0; i <= N; i++) {
+      const p = path.getPointAt(i / N);
+      pos.push(p.x, p.y, p.z - W, p.x, p.y, p.z + W);
+      uv.push(i / N * 10, 0, i / N * 10, 1);
+      if (i < N) {
+        const a = i * 2;
+        idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+    }
+    const rGeo = new THREE.BufferGeometry();
+    rGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    rGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    rGeo.setIndex(idx);
+    rGeo.computeVertexNormals();
+    const ribbon = new THREE.Mesh(rGeo, new THREE.MeshBasicMaterial({
+      map: ribbonTex, side: THREE.DoubleSide,
+    }));
+    projector.add(ribbon);
+  }
 
   // stand
   const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 3.2, 8), bodyMat);
@@ -838,11 +960,69 @@ const polaroids = new THREE.Group();
   scene.add(g);
 }
 
+/* ------------------------------------------------ the drone
+   A little quad orbiting the lot, filming everything — its feed shows on
+   the corner monitor (a second scissored view of the same scene). */
+const drone = new THREE.Group();
+const droneCam = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 700);
+let dronePath, droneProps = [];
+{
+  const shell = new THREE.MeshStandardMaterial({ color: 0x2a2438, roughness: 0.45, metalness: 0.5 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.62), shell);
+  drone.add(body);
+  for (const [x, z] of [[-0.45, -0.45], [0.45, -0.45], [-0.45, 0.45], [0.45, 0.45]]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.07), shell);
+    arm.position.set(x * 0.6, 0.08, z * 0.6);
+    arm.rotation.y = Math.atan2(z, x);
+    drone.add(arm);
+    const prop = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.26, 0.26, 0.015, 12),
+      new THREE.MeshBasicMaterial({ color: 0x8a7bb0, transparent: true, opacity: 0.35 })
+    );
+    prop.position.set(x, 0.14, z);
+    drone.add(prop);
+    droneProps.push(prop);
+  }
+  const led = sprite(COL.red, 0.5);
+  led.position.set(0, -0.1, 0.34);
+  led.name = 'droneLed';
+  drone.add(led);
+  const gimbal = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), shell);
+  gimbal.position.set(0, -0.18, 0.18);
+  drone.add(gimbal);
+  scene.add(drone);
+
+  dronePath = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(32, 13, 12),
+    new THREE.Vector3(2, 17, -34),
+    new THREE.Vector3(-34, 12, -10),
+    new THREE.Vector3(-10, 10, 28),
+  ], true, 'catmullrom', 0.7);
+}
+
 /* ------------------------------------------------ lights */
-scene.add(new THREE.AmbientLight(0x3a3252, 1.5));
+const amb = new THREE.AmbientLight(0x3a3252, 1.5);
+scene.add(amb);
 const key = new THREE.DirectionalLight(0x8f86b8, 1.1);
 key.position.set(18, 60, 35);
 scene.add(key);
+
+/* golden hour waits behind a toggle — a low sun and everything it changes */
+const sun = sprite(0xffb066, 30);
+sun.position.set(-70, 11, -110);
+sun.material.opacity = 0;
+scene.add(sun);
+const NIGHT = {
+  fog: new THREE.Color(0x07060a), amb: new THREE.Color(0x3a3252), ambI: 1.5,
+  key: new THREE.Color(0x8f86b8), keyI: 1.1, keyPos: new THREE.Vector3(18, 60, 35),
+  ground: new THREE.Color(0x0a0910), fogD: 0.0075,
+};
+const GOLDEN = {
+  fog: new THREE.Color(0x241410), amb: new THREE.Color(0x9a6a4a), ambI: 2.0,
+  key: new THREE.Color(0xffa04e), keyI: 2.6, keyPos: new THREE.Vector3(-55, 16, -70),
+  ground: new THREE.Color(0x181014), fogD: 0.0058,
+};
+let dayV = 0, dayTarget = 0;
 const projLight = new THREE.PointLight(0xffe9bb, 0, 60, 1.6);   // ramps with the beam
 projLight.position.set(11, 5.5, 9);
 scene.add(projLight);
@@ -1074,14 +1254,29 @@ const gelTarget = new THREE.Color(COL.amber);
 
 /* hooks for the DOM layer */
 let hlIndex = -1;
+let pipOn = FANCY;      // the drone monitor, on by default where it's cheap
 window.__lot = {
+  fancy: FANCY,
   setGrade(v) { gradeV = clamp01(v); applyLook(); },
   highlightFrame(i) { hlIndex = i; },
   action() { actionT = 5.2; },
   sweep() { if (actionT <= 0) sweepT = 2.8; },
   wrapClap() { wrapClapT = 0.62; },
   gel(hex) { gelTarget.set(hex || COL.amber); },
+  setDay(on) { dayTarget = on ? 1 : 0; },
+  drone(on) { pipOn = FANCY && on; },
+  setWheels(lift, gamma, gain) {
+    if (!gradePass) return;
+    gradePass.uniforms.uLift.value.fromArray(lift);
+    gradePass.uniforms.uGamma.value.fromArray(gamma);
+    gradePass.uniforms.uGain.value.fromArray(gain);
+  },
 };
+
+/* film-burn state — replaces the iris on the big boundary between the
+   client-facing half and the craft half of the page */
+const BURN_DUR = 1.25;
+let burnT = BURN_DUR;
 
 /* draggable projector reel — grab it in the hero to scrub the showreel */
 const reelDrag = { near: false, on: false, lastX: 0, vel: 0, px: 0, py: 0, vis: false };
@@ -1159,10 +1354,17 @@ const _camLook = new THREE.Vector3();
 function stageCamera() {
   let i = 0;
   while (i < stages.length - 1 && scrollY >= stages[i + 1].y) i++;
-  // crossing into a new scene closes the iris for a beat
+  // crossing into a new scene closes the iris for a beat — except the big
+  // boundary between the two halves, where the film catches fire instead
   if (i !== stageIdx) {
-    if (stageIdx !== -1 && !REDUCED && irisT >= IRIS_DUR) {
-      irisT = 0;
+    if (stageIdx !== -1 && !REDUCED) {
+      const bigCut = burnPass && (Math.min(i, stageIdx) === 5 && Math.max(i, stageIdx) === 6);
+      if (bigCut && burnT >= BURN_DUR) {
+        burnT = 0;
+        burnPass.uniforms.uSeed.value = Math.random() * 40;
+      } else if (!bigCut && irisT >= IRIS_DUR) {
+        irisT = 0;
+      }
       if (window.__sfx) window.__sfx.tick();
     }
     stageIdx = i;
@@ -1182,6 +1384,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  if (composer) composer.setSize(innerWidth, innerHeight);
   layoutStages();
 });
 
@@ -1216,16 +1419,20 @@ function tick() {
 
     // the projector never stops — faster when the visitor scrolls fast,
     // still under the visitor's hand when they've grabbed the reel
+    let reelRate;
     if (reelDrag.on) {
-      // spun directly by the pointer; nothing to add here
+      reelRate = -reelDrag.vel * 14;
     } else if (Math.abs(reelDrag.vel) > 0.02) {
-      for (const r of reels) r.rotation.z -= reelDrag.vel * dt * 14;
+      reelRate = -reelDrag.vel * 14;
+      for (const r of reels) r.rotation.z += dt * reelRate;
       reelDrag.vel *= 1 - Math.min(1, dt * 2.2);
       if (Math.abs(reelDrag.vel) <= 0.02 && screenVideo.paused) screenVideo.play().catch(() => {});
     } else {
-      const spin = 2.4 * (1 + scrollVel * 0.12);
-      for (const r of reels) r.rotation.z += dt * spin;
+      reelRate = 2.4 * (1 + scrollVel * 0.12);
+      for (const r of reels) r.rotation.z += dt * reelRate;
     }
+    // the celluloid rides whatever the reels do
+    if (ribbonTex) ribbonTex.offset.x -= reelRate * dt * 0.09;
 
     // where the reel sits on screen, for the grab affordance
     reels[0].getWorldPosition(_proj).project(camera);
@@ -1336,8 +1543,67 @@ function tick() {
   dustAll.rotation.y = t * 0.006;
   dustBeam.position.y = Math.sin(t * 0.5) * 0.12;
 
-  renderer.render(scene, camera);
+  // the drone flies its circuit, gimbal on the current scene
+  {
+    const k = (t * 0.014) % 1;
+    drone.position.copy(dronePath.getPointAt(k));
+    drone.position.y += Math.sin(t * 1.7) * 0.35;
+    const ahead = dronePath.getPointAt((k + 0.02) % 1);
+    drone.lookAt(ahead);
+    for (const p of droneProps) p.rotation.y += dt * 46;
+    const led = drone.getObjectByName('droneLed');
+    led.material.opacity = (t % 1.3) < 0.1 ? 1 : 0.12;
+    droneCam.position.copy(drone.position);
+    droneCam.position.y -= 0.3;
+    droneCam.lookAt(introOn ? HERO_LOOK : _camLook);
+  }
+
+  // golden hour drifts in and out
+  dayV += (dayTarget - dayV) * Math.min(1, dt * 1.6);
+  if (Math.abs(dayTarget - dayV) > 0.002 || dayV > 0.002) {
+    scene.fog.color.lerpColors(NIGHT.fog, GOLDEN.fog, dayV);
+    scene.fog.density = NIGHT.fogD + (GOLDEN.fogD - NIGHT.fogD) * dayV;
+    amb.color.lerpColors(NIGHT.amb, GOLDEN.amb, dayV);
+    amb.intensity = NIGHT.ambI + (GOLDEN.ambI - NIGHT.ambI) * dayV;
+    key.color.lerpColors(NIGHT.key, GOLDEN.key, dayV);
+    key.intensity = NIGHT.keyI + (GOLDEN.keyI - NIGHT.keyI) * dayV;
+    key.position.lerpVectors(NIGHT.keyPos, GOLDEN.keyPos, dayV);
+    ground.material.color.lerpColors(NIGHT.ground, GOLDEN.ground, dayV);
+    sun.material.opacity = dayV * 0.9;
+  }
+
+  // film burn sweep
+  if (burnPass) {
+    if (burnT < BURN_DUR) {
+      burnT += dt;
+      burnPass.uniforms.uB.value = 1.15 * Math.sin(Math.PI * clamp01(burnT / BURN_DUR));
+    } else if (burnPass.uniforms.uB.value !== 0) {
+      burnPass.uniforms.uB.value = 0;
+    }
+  }
+
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
+
+  // the drone monitor — its own little renderer so the feed rides above
+  // the page content inside the frame
+  if (pipOn && !introOn) {
+    if (!pipRenderer) {
+      const holder2 = document.getElementById('dronecam');
+      if (holder2) {
+        pipRenderer = new THREE.WebGLRenderer({ antialias: false });
+        pipRenderer.setPixelRatio(1);
+        pipRenderer.setSize(300, 169);
+        holder2.appendChild(pipRenderer.domElement);
+      }
+    }
+    if (pipRenderer) pipRenderer.render(scene, droneCam);
+  }
 }
+let pipRenderer = null;
 
 /* pause only when the tab is hidden — the lot lives behind the whole page */
 let running = false;

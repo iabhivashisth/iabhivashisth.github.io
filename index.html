@@ -78,10 +78,26 @@
       <input type="range" id="gradeRange" min="0" max="100" value="100" aria-label="Colour grade, log to graded">
       <span>GRADED</span>
     </span>
+    <span class="camhud__wheels" id="wheels">
+      <span class="wheel" data-wheel="lift" title="Lift — drag to tint shadows"><i></i><b>L</b></span>
+      <span class="wheel" data-wheel="gamma" title="Gamma — drag to tint mids"><i></i><b>G</b></span>
+      <span class="wheel" data-wheel="gain" title="Gain — drag to tint highlights"><i></i><b>G</b></span>
+    </span>
+    <button class="camhud__snd" id="dayBtn" aria-label="Toggle golden hour" aria-pressed="false">🌙</button>
+    <button class="camhud__snd" id="droneBtn" aria-label="Toggle drone camera" aria-pressed="true">🎥</button>
   </div>
 
   <!-- quick white flash for slate marks -->
   <div class="whiteflash" id="whiteFlash" aria-hidden="true"></div>
+
+  <!-- director's cut: letterbox bars + narration -->
+  <div class="tourbars" aria-hidden="true"><span></span><span></span></div>
+  <div class="tourlabel mono" id="tourLabel" aria-hidden="true"></div>
+
+  <!-- drone monitor frame (the feed renders beneath it on the main canvas) -->
+  <div class="dronecam mono" id="dronecam" hidden aria-hidden="true">
+    <span class="dronecam__tag"><i>◉</i> DRONE CAM · REC</span>
+  </div>
 
   <!-- scroll progress: a strip of celluloid down the right edge -->
   <div class="filmbar" id="filmbar">
@@ -150,6 +166,7 @@
 
       <div class="hero__cta reveal">
         <button class="btn btn--amber" id="showreelBtn" type="button">▶ Watch showreel</button>
+        <button class="btn btn--ghost" id="tourBtn" type="button">🎬 Play the tour</button>
         <a class="btn btn--ghost" href="#work">See the work</a>
       </div>
 
@@ -861,6 +878,12 @@
 
       <div class="contact reveal">
         <div class="leader" aria-hidden="true"><canvas id="leaderCanvas"></canvas></div>
+
+        <div class="slategame reveal" id="slategame">
+          <canvas id="slateGameCanvas" width="300" height="170" aria-label="Sync the slate mini game"></canvas>
+          <p class="slategame__cap mono">SYNC THE SLATE — CLICK ON THE MARK</p>
+        </div>
+
         <p class="contact__lede">Have a story that needs telling — an ad, a film, a channel that needs a
           sharper cut? Let's work together to create something truly remarkable.</p>
         <a class="contact__mail" href="mailto:abhiwork.704@gmail.com">abhiwork.704@gmail.com</a>
