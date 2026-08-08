@@ -53,34 +53,13 @@ camera.lookAt(HERO_LOOK);
 /* ------------------------------------------------ post chain
    render → bloom (the lights finally burn) → colour grade (the Resolve
    wheels) → film burn (the big transition) → output. Desktop only. */
-let composer = null, gradePass = null, burnPass = null;
+let composer = null, burnPass = null;
 if (FANCY) {
   composer = new EffectComposer(renderer);
   composer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   composer.setSize(innerWidth, innerHeight);
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.38, 0.3, 0.88));
-
-  gradePass = new ShaderPass({
-    uniforms: {
-      tDiffuse: { value: null },
-      uLift: { value: new THREE.Vector3(0, 0, 0) },
-      uGamma: { value: new THREE.Vector3(1, 1, 1) },
-      uGain: { value: new THREE.Vector3(1, 1, 1) },
-    },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `
-      uniform sampler2D tDiffuse;
-      uniform vec3 uLift, uGamma, uGain;
-      varying vec2 vUv;
-      void main() {
-        vec4 t = texture2D(tDiffuse, vUv);
-        vec3 c = t.rgb * uGain + uLift;
-        c = pow(max(c, 0.0), uGamma);
-        gl_FragColor = vec4(c, t.a);
-      }`,
-  });
-  composer.addPass(gradePass);
 
   burnPass = new ShaderPass({
     uniforms: {
@@ -670,7 +649,7 @@ let neonMat, neonLight, neonStreak;
   neonLight.position.set(0, 9, 2.5);
   g.add(neonLight);
 
-  neonStreak = streak(16);
+  neonStreak = streak(10);
   neonStreak.position.set(0, 9, 0.6);
   g.add(neonStreak);
 
@@ -1236,11 +1215,6 @@ function applyLook() {
   if (f !== lastFilter) { lastFilter = f; canvas.style.filter = f; }
 }
 
-/* iris wipe — a circular vignette that dips closed as the camera flies to a
-   new corner of the lot */
-const irisEl = document.getElementById('iris');
-const IRIS_DUR = 0.9;
-let irisT = IRIS_DUR;
 let stageIdx = -1;
 
 /* ACTION! — both searchlights swing onto the screen for a few seconds */
@@ -1265,16 +1239,10 @@ window.__lot = {
   gel(hex) { gelTarget.set(hex || COL.amber); },
   setDay(on) { dayTarget = on ? 1 : 0; },
   drone(on) { pipOn = FANCY && on; },
-  setWheels(lift, gamma, gain) {
-    if (!gradePass) return;
-    gradePass.uniforms.uLift.value.fromArray(lift);
-    gradePass.uniforms.uGamma.value.fromArray(gamma);
-    gradePass.uniforms.uGain.value.fromArray(gain);
-  },
 };
 
-/* film-burn state — replaces the iris on the big boundary between the
-   client-facing half and the craft half of the page */
+/* film-burn state — fires on the big boundary between the client-facing
+   half and the craft half of the page */
 const BURN_DUR = 1.25;
 let burnT = BURN_DUR;
 
@@ -1354,16 +1322,13 @@ const _camLook = new THREE.Vector3();
 function stageCamera() {
   let i = 0;
   while (i < stages.length - 1 && scrollY >= stages[i + 1].y) i++;
-  // crossing into a new scene closes the iris for a beat — except the big
-  // boundary between the two halves, where the film catches fire instead
+  // crossing the big boundary between the two halves, the film catches fire
   if (i !== stageIdx) {
     if (stageIdx !== -1 && !REDUCED) {
       const bigCut = burnPass && (Math.min(i, stageIdx) === 5 && Math.max(i, stageIdx) === 6);
       if (bigCut && burnT >= BURN_DUR) {
         burnT = 0;
         burnPass.uniforms.uSeed.value = Math.random() * 40;
-      } else if (!bigCut && irisT >= IRIS_DUR) {
-        irisT = 0;
       }
       if (window.__sfx) window.__sfx.tick();
     }
@@ -1451,13 +1416,6 @@ function tick() {
   }
   applyLook();
 
-  // iris wipe
-  if (irisEl && irisT < IRIS_DUR) {
-    irisT += dt;
-    const k = Math.sin(Math.PI * clamp01(irisT / IRIS_DUR));
-    irisEl.style.setProperty('--r', (160 - 122 * k).toFixed(1) + 'vmax');
-  }
-
   // camera tally blink
   const tally = scene.getObjectByName('tally');
   if (tally) tally.material.opacity = (t % 1.6) < 0.12 ? 1 : 0.15;
@@ -1465,8 +1423,8 @@ function tick() {
   // neon flicker — mostly steady, the odd stutter
   if (neonMat) {
     const n = Math.sin(t * 13.7) * Math.sin(t * 3.1);
-    neonMat.opacity = n > 0.985 ? 0.45 : 0.96;
-    neonLight.intensity = neonMat.opacity > 0.9 ? 42 : 18;
+    neonMat.opacity = n > 0.985 ? 0.38 : 0.8;
+    neonLight.intensity = neonMat.opacity > 0.7 ? 26 : 12;
   }
 
   // film-strip frames breathe on their arc; a hovered work card pulls its
@@ -1526,7 +1484,7 @@ function tick() {
 
   // neon flare breathes with the sign
   if (neonStreak) {
-    neonStreak.material.opacity = (neonMat.opacity > 0.9 ? 0.34 : 0.1) + Math.sin(t * 1.3) * 0.05;
+    neonStreak.material.opacity = (neonMat.opacity > 0.7 ? 0.14 : 0.05) + Math.sin(t * 1.3) * 0.03;
   }
 
   // playhead scrubs the edit bay, loops like a preview render

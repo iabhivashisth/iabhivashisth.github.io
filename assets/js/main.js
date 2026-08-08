@@ -579,58 +579,6 @@
     });
   }
 
-  /* ---------------------------------------------- resolve wheels
-     Lift / gamma / gain trackballs — drag inside a wheel to push that range
-     toward a colour, double-click to reset. Drives the grade shader. */
-  var wheelsWrap = document.getElementById('wheels');
-  if (wheelsWrap && window.matchMedia('(hover: hover)').matches) {
-    var wheelVals = { lift: [0, 0], gamma: [0, 0], gain: [0, 0] };
-    function pushWheels() {
-      if (!window.__lot || !window.__lot.fancy) return;
-      var toRgb = function (v, s) {
-        var mag = Math.min(1, Math.hypot(v[0], v[1]));
-        if (mag === 0) return [0, 0, 0];
-        var a = Math.atan2(v[1], v[0]);
-        return [Math.cos(a), Math.cos(a - 2.094), Math.cos(a + 2.094)].map(function (c) { return c * mag * s; });
-      };
-      var lift = toRgb(wheelVals.lift, 0.10);
-      var gainOff = toRgb(wheelVals.gain, 0.28);
-      var gammaOff = toRgb(wheelVals.gamma, 0.4);
-      window.__lot.setWheels(
-        lift,
-        [1 + gammaOff[0], 1 + gammaOff[1], 1 + gammaOff[2]],
-        [1 + gainOff[0], 1 + gainOff[1], 1 + gainOff[2]]
-      );
-    }
-    wheelsWrap.querySelectorAll('.wheel').forEach(function (w) {
-      var name = w.dataset.wheel;
-      var dot = w.querySelector('i');
-      var dragging = false;
-      var setFrom = function (e) {
-        var r = w.getBoundingClientRect();
-        var x = ((e.clientX - r.left) / r.width - 0.5) * 2;
-        var y = ((e.clientY - r.top) / r.height - 0.5) * 2;
-        var mag = Math.hypot(x, y);
-        if (mag > 1) { x /= mag; y /= mag; }
-        wheelVals[name] = [x, -y];        // up = positive
-        dot.style.transform = 'translate(' + (x * 8).toFixed(1) + 'px,' + (y * 8).toFixed(1) + 'px)';
-        pushWheels();
-      };
-      w.addEventListener('pointerdown', function (e) {
-        dragging = true;
-        w.setPointerCapture(e.pointerId);
-        setFrom(e);
-      });
-      w.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
-      w.addEventListener('pointerup', function () { dragging = false; });
-      w.addEventListener('dblclick', function () {
-        wheelVals[name] = [0, 0];
-        dot.style.transform = '';
-        pushWheels();
-      });
-    });
-  }
-
   /* ---------------------------------------------- golden hour + drone */
   var dayBtn = document.getElementById('dayBtn');
   if (dayBtn) {

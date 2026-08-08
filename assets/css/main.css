@@ -959,14 +959,6 @@ main { position: relative; z-index: 2; }
   font-size: 11px; letter-spacing: 0.18em; color: var(--muted);
 }
 
-/* ------------------------------------------------ iris wipe */
-.iris {
-  position: fixed; inset: 0; z-index: 85; pointer-events: none;
-  --r: 160vmax;
-  background: radial-gradient(circle at 50% 44%,
-    transparent calc(var(--r) - 14vmax), rgba(4, 3, 7, 0.96) var(--r));
-}
-
 /* ------------------------------------------------ ACTION! flash */
 .action-flash {
   position: fixed; inset: 0; z-index: 95; pointer-events: none;
@@ -1060,34 +1052,6 @@ body.touring .nav, body.touring .camhud, body.touring .filmbar, body.touring .dr
   position: absolute; inset: 4px;
   border: 1px solid rgba(242, 237, 227, 0.16);
   border-radius: 2px;
-}
-
-/* ------------------------------------------------ resolve wheels */
-.camhud__wheels { display: flex; gap: 8px; }
-.wheel {
-  position: relative;
-  width: 26px; height: 26px; border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(7, 6, 10, 0.9) 0 34%, transparent 36%),
-    conic-gradient(#e84545, #f4b23c, #7cd65a, #46c8b2, #4d7cff, #b07cff, #e84545);
-  border: 1px solid var(--line);
-  cursor: crosshair;
-  touch-action: none;
-}
-.wheel i {
-  position: absolute; left: 50%; top: 50%;
-  width: 6px; height: 6px; margin: -3px 0 0 -3px;
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
-}
-.wheel b {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 8px; font-weight: 600;
-  color: var(--muted);
-  pointer-events: none;
 }
 
 /* ------------------------------------------------ sync-the-slate game */
