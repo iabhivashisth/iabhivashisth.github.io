@@ -176,7 +176,17 @@ body.ready .nav { opacity: 1; transform: none; transition: opacity 0.6s 0.2s, tr
   position: relative; z-index: 2;
   padding: 120px 22px 80px;
 }
-.hero__inner { max-width: var(--wrap); margin: 0 auto; width: 100%; }
+/* a soft key-side scrim so the name never fights the lot behind it */
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(97deg, rgba(7, 6, 10, 0.88) 0%, rgba(7, 6, 10, 0.6) 36%, rgba(7, 6, 10, 0.12) 58%, transparent 72%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+body.ready .hero::before { opacity: 1; }
+.hero__inner { max-width: var(--wrap); margin: 0 auto; width: 100%; position: relative; }
 .hero__eyebrow {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--mono); font-size: 13px; letter-spacing: 0.16em;
@@ -192,11 +202,24 @@ body.ready .nav { opacity: 1; transform: none; transition: opacity 0.6s 0.2s, tr
   letter-spacing: 0.015em;
   text-transform: uppercase;
 }
-.hero__line { display: block; overflow: hidden; }
+.hero__line { display: block; }
 .hero__word { display: inline-block; }
-.hero__word--outline {
+.hero__word--gold {
   color: transparent;
-  -webkit-text-stroke: 2px var(--amber);
+  background: linear-gradient(178deg, #ffe2a8 8%, var(--amber) 48%, #b96f16 96%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-stroke: 1px rgba(255, 226, 168, 0.28);
+  filter: drop-shadow(0 6px 26px rgba(244, 178, 60, 0.3));
+}
+.hero__scribble {
+  display: inline-block;
+  font-family: "Caveat", "Kalam", cursive;
+  font-size: clamp(20px, 2.6vw, 34px);
+  color: var(--red);
+  transform: rotate(-5deg) translateY(-0.5em);
+  margin-left: 18px;
+  text-shadow: 0 2px 14px rgba(7, 6, 10, 0.9);
+  letter-spacing: 0.02em;
 }
 .hero__role {
   margin-top: 20px;
@@ -341,7 +364,7 @@ main { position: relative; z-index: 2; }
   font-size: 11px; letter-spacing: 0.18em; color: var(--muted);
   text-align: center;
 }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 38px; }
 .stat {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -657,41 +680,44 @@ main { position: relative; z-index: 2; }
 }
 .still:hover img { transform: scale(1.05); filter: saturate(1.1); }
 
-/* ------------------------------------------------ education tickets */
-.passes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.pass {
-  display: flex;
+/* ------------------------------------------------ education laurels */
+.laurels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.laurel {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
+  padding: 26px 20px 28px;
+  text-align: center;
   transition: border-color 0.25s;
 }
-.pass:hover { border-color: rgba(244, 178, 60, 0.4); }
-.pass__main { padding: 22px; flex: 1; }
-.pass__label { font-size: 10.5px; letter-spacing: 0.2em; color: var(--teal); }
-.pass__main h3 { margin: 10px 0 4px; font-size: 17px; }
-.pass__school { color: var(--muted); font-size: 14px; }
-.pass__meta {
-  display: flex; gap: 16px; flex-wrap: wrap;
-  margin-top: 16px;
-  font-size: 10px; letter-spacing: 0.1em; color: var(--muted);
+.laurel:hover { border-color: rgba(244, 178, 60, 0.4); }
+.laurel:hover .laurel__crest { color: var(--amber); transform: scale(1.04); }
+.laurel__crest {
+  position: relative;
+  width: 178px; height: 106px;
+  margin: 0 auto 14px;
+  color: rgba(244, 178, 60, 0.8);
+  transition: color 0.3s, transform 0.3s;
 }
-.pass__meta span { display: flex; flex-direction: column; gap: 2px; }
-.pass__meta b { color: var(--amber); font-size: 12px; }
-.pass__stub {
-  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  padding: 18px 12px;
-  border-left: 1.5px dashed rgba(242, 237, 227, 0.25);
-  background: rgba(7, 6, 10, 0.5);
+.laurel__wreath { display: block; width: 100%; height: 100%; }
+.laurel__crest b {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding-bottom: 8px;
+  font-family: var(--display);
+  font-size: 38px; font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--ink);
 }
-.pass__code { writing-mode: vertical-rl; font-size: 11px; letter-spacing: 0.2em; color: var(--amber); }
-.pass__barcode {
-  width: 22px; height: 58px;
-  background: repeating-linear-gradient(to bottom,
-    var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px);
-  opacity: 0.7;
+.laurel__body {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 0 10px;
 }
+.laurel__label { font-size: 9.5px; letter-spacing: 0.22em; color: var(--teal); }
+.laurel__body h3 { font-size: 16.5px; line-height: 1.3; }
+.laurel__school { color: var(--muted); font-size: 13px; }
+.laurel__year { font-size: 11px; letter-spacing: 0.16em; color: var(--amber); margin-top: 3px; }
 
 /* ------------------------------------------------ contact */
 .section--contact { padding-bottom: 140px; }
@@ -762,7 +788,8 @@ main { position: relative; z-index: 2; }
   .services { grid-template-columns: repeat(2, 1fr); }
   .works { grid-template-columns: repeat(2, 1fr); }
   .legends { grid-template-columns: repeat(3, 1fr); }
-  .passes { grid-template-columns: 1fr; }
+  .laurels { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
   .stills { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 720px) {

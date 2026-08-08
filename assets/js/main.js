@@ -77,7 +77,7 @@
 
   /* ---------------------------------------------- pointer tilt */
   if (!REDUCED && matchMedia('(hover: hover)').matches) {
-    document.querySelectorAll('.stat, .service, .panel, .workcard, .legend, .pass').forEach(function (card) {
+    document.querySelectorAll('.stat, .service, .panel, .workcard, .legend, .laurel').forEach(function (card) {
       card.setAttribute('data-tilt', '');
       card.addEventListener('pointermove', function (e) {
         var r = card.getBoundingClientRect();
